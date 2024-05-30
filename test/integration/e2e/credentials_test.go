@@ -2,13 +2,13 @@ package e2e
 
 import (
 	"fmt"
-	"log/slog"
+	"testing"
 
 	"github.com/cloudbase/garm/params"
 )
 
-func EnsureTestCredentials(name string, oauthToken string, endpointName string) {
-	slog.Info("Ensuring test credentials exist")
+func EnsureTestCredentials(t *testing.T, name string, oauthToken string, endpointName string) {
+	t.Log("Ensuring test credentials exist")
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        name,
 		Endpoint:    endpointName,
@@ -18,13 +18,13 @@ func EnsureTestCredentials(name string, oauthToken string, endpointName string) 
 			OAuth2Token: oauthToken,
 		},
 	}
-	CreateGithubCredentials(createCredsParams)
+	CreateGithubCredentials(t, createCredsParams)
 
 	createCredsParams.Name = fmt.Sprintf("%s-clone", name)
-	CreateGithubCredentials(createCredsParams)
+	CreateGithubCredentials(t, createCredsParams)
 }
 
-func createDummyCredentials(name, endpointName string) *params.GithubCredentials {
+func createDummyCredentials(t *testing.T, name, endpointName string) *params.GithubCredentials {
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        name,
 		Endpoint:    endpointName,
@@ -34,13 +34,13 @@ func createDummyCredentials(name, endpointName string) *params.GithubCredentials
 			OAuth2Token: "dummy",
 		},
 	}
-	return CreateGithubCredentials(createCredsParams)
+	return CreateGithubCredentials(t, createCredsParams)
 }
 
-func TestGithubCredentialsErrorOnDuplicateCredentialsName() {
-	slog.Info("Testing error on duplicate credentials name")
-	creds := createDummyCredentials(dummyCredentialsName, defaultEndpointName)
-	defer DeleteGithubCredential(int64(creds.ID))
+func TestGithubCredentialsErrorOnDuplicateCredentialsName(t *testing.T) {
+	t.Log("Testing error on duplicate credentials name")
+	creds := createDummyCredentials(t, dummyCredentialsName, defaultEndpointName)
+	defer DeleteGithubCredential(t, int64(creds.ID))
 
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        dummyCredentialsName,
@@ -52,27 +52,27 @@ func TestGithubCredentialsErrorOnDuplicateCredentialsName() {
 		},
 	}
 	if _, err := createGithubCredentials(cli, authToken, createCredsParams); err == nil {
-		panic("expected error when creating credentials with duplicate name")
+		t.Fatal("expected error when creating credentials with duplicate name")
 	}
 }
 
-func TestGithubCredentialsFailsToDeleteWhenInUse() {
-	slog.Info("Testing error when deleting credentials in use")
-	creds := createDummyCredentials(dummyCredentialsName, defaultEndpointName)
+func TestGithubCredentialsFailsToDeleteWhenInUse(t *testing.T) {
+	t.Log("Testing error when deleting credentials in use")
+	creds := createDummyCredentials(t, dummyCredentialsName, defaultEndpointName)
 
-	repo := CreateRepo("dummy-owner", "dummy-repo", creds.Name, "superSecret@123BlaBla")
+	repo := CreateRepo(t, "dummy-owner", "dummy-repo", creds.Name, "superSecret@123BlaBla")
 	defer func() {
 		deleteRepo(cli, authToken, repo.ID)
 		deleteGithubCredentials(cli, authToken, int64(creds.ID))
 	}()
 
 	if err := deleteGithubCredentials(cli, authToken, int64(creds.ID)); err == nil {
-		panic("expected error when deleting credentials in use")
+		t.Fatal("expected error when deleting credentials in use")
 	}
 }
 
-func TestGithubCredentialsFailsOnInvalidAuthType() {
-	slog.Info("Testing error on invalid auth type")
+func TestGithubCredentialsFailsOnInvalidAuthType(t *testing.T) {
+	t.Log("Testing error on invalid auth type")
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        dummyCredentialsName,
 		Endpoint:    defaultEndpointName,
@@ -84,13 +84,13 @@ func TestGithubCredentialsFailsOnInvalidAuthType() {
 	}
 	_, err := createGithubCredentials(cli, authToken, createCredsParams)
 	if err == nil {
-		panic("expected error when creating credentials with invalid auth type")
+		t.Fatal("expected error when creating credentials with invalid auth type")
 	}
 	expectAPIStatusCode(err, 400)
 }
 
-func TestGithubCredentialsFailsWhenAuthTypeParamsAreIncorrect() {
-	slog.Info("Testing error when auth type params are incorrect")
+func TestGithubCredentialsFailsWhenAuthTypeParamsAreIncorrect(t *testing.T) {
+	t.Log("Testing error when auth type params are incorrect")
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        dummyCredentialsName,
 		Endpoint:    defaultEndpointName,
@@ -99,18 +99,18 @@ func TestGithubCredentialsFailsWhenAuthTypeParamsAreIncorrect() {
 		App: params.GithubApp{
 			AppID:           123,
 			InstallationID:  456,
-			PrivateKeyBytes: getTestFileContents("certs/srv-key.pem"),
+			PrivateKeyBytes: getTestFileContents(t, "certs/srv-key.pem"),
 		},
 	}
 	_, err := createGithubCredentials(cli, authToken, createCredsParams)
 	if err == nil {
-		panic("expected error when creating credentials with invalid auth type params")
+		t.Fatal("expected error when creating credentials with invalid auth type params")
 	}
 	expectAPIStatusCode(err, 400)
 }
 
-func TestGithubCredentialsFailsWhenAuthTypeParamsAreMissing() {
-	slog.Info("Testing error when auth type params are missing")
+func TestGithubCredentialsFailsWhenAuthTypeParamsAreMissing(t *testing.T) {
+	t.Log("Testing error when auth type params are missing")
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        dummyCredentialsName,
 		Endpoint:    defaultEndpointName,
@@ -119,15 +119,15 @@ func TestGithubCredentialsFailsWhenAuthTypeParamsAreMissing() {
 	}
 	_, err := createGithubCredentials(cli, authToken, createCredsParams)
 	if err == nil {
-		panic("expected error when creating credentials with missing auth type params")
+		t.Fatal("expected error when creating credentials with missing auth type params")
 	}
 	expectAPIStatusCode(err, 400)
 }
 
-func TestGithubCredentialsUpdateFailsWhenBothPATAndAppAreSupplied() {
-	slog.Info("Testing error when both PAT and App are supplied")
-	creds := createDummyCredentials(dummyCredentialsName, defaultEndpointName)
-	defer DeleteGithubCredential(int64(creds.ID))
+func TestGithubCredentialsUpdateFailsWhenBothPATAndAppAreSupplied(t *testing.T) {
+	t.Log("Testing error when both PAT and App are supplied")
+	creds := createDummyCredentials(t, dummyCredentialsName, defaultEndpointName)
+	defer DeleteGithubCredential(t, int64(creds.ID))
 
 	updateCredsParams := params.UpdateGithubCredentialsParams{
 		PAT: &params.GithubPAT{
@@ -136,18 +136,18 @@ func TestGithubCredentialsUpdateFailsWhenBothPATAndAppAreSupplied() {
 		App: &params.GithubApp{
 			AppID:           123,
 			InstallationID:  456,
-			PrivateKeyBytes: getTestFileContents("certs/srv-key.pem"),
+			PrivateKeyBytes: getTestFileContents(t, "certs/srv-key.pem"),
 		},
 	}
 	_, err := updateGithubCredentials(cli, authToken, int64(creds.ID), updateCredsParams)
 	if err == nil {
-		panic("expected error when updating credentials with both PAT and App")
+		t.Fatal("expected error when updating credentials with both PAT and App")
 	}
 	expectAPIStatusCode(err, 400)
 }
 
-func TestGithubCredentialsFailWhenAppKeyIsInvalid() {
-	slog.Info("Testing error when app key is invalid")
+func TestGithubCredentialsFailWhenAppKeyIsInvalid(t *testing.T) {
+	t.Log("Testing error when app key is invalid")
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        dummyCredentialsName,
 		Endpoint:    defaultEndpointName,
@@ -161,13 +161,13 @@ func TestGithubCredentialsFailWhenAppKeyIsInvalid() {
 	}
 	_, err := createGithubCredentials(cli, authToken, createCredsParams)
 	if err == nil {
-		panic("expected error when creating credentials with invalid app key")
+		t.Fatal("expected error when creating credentials with invalid app key")
 	}
 	expectAPIStatusCode(err, 400)
 }
 
-func TestGithubCredentialsFailWhenEndpointDoesntExist() {
-	slog.Info("Testing error when endpoint doesn't exist")
+func TestGithubCredentialsFailWhenEndpointDoesntExist(t *testing.T) {
+	t.Log("Testing error when endpoint doesn't exist")
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        dummyCredentialsName,
 		Endpoint:    "iDontExist.example.com",
@@ -179,15 +179,15 @@ func TestGithubCredentialsFailWhenEndpointDoesntExist() {
 	}
 	_, err := createGithubCredentials(cli, authToken, createCredsParams)
 	if err == nil {
-		panic("expected error when creating credentials with invalid endpoint")
+		t.Fatal("expected error when creating credentials with invalid endpoint")
 	}
 	expectAPIStatusCode(err, 404)
 }
 
-func TestGithubCredentialsFailsOnDuplicateName() {
-	slog.Info("Testing error on duplicate credentials name")
-	creds := createDummyCredentials(dummyCredentialsName, defaultEndpointName)
-	defer DeleteGithubCredential(int64(creds.ID))
+func TestGithubCredentialsFailsOnDuplicateName(t *testing.T) {
+	t.Log("Testing error on duplicate credentials name")
+	creds := createDummyCredentials(t, dummyCredentialsName, defaultEndpointName)
+	defer DeleteGithubCredential(t, int64(creds.ID))
 
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        dummyCredentialsName,
@@ -200,7 +200,7 @@ func TestGithubCredentialsFailsOnDuplicateName() {
 	}
 	_, err := createGithubCredentials(cli, authToken, createCredsParams)
 	if err == nil {
-		panic("expected error when creating credentials with duplicate name")
+		t.Fatal("expected error when creating credentials with duplicate name")
 	}
 	expectAPIStatusCode(err, 409)
 }

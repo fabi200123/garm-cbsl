@@ -2,24 +2,24 @@ package e2e
 
 import (
 	"fmt"
-	"log/slog"
+	"testing"
 	"time"
 
 	"github.com/cloudbase/garm/params"
 )
 
-func waitPoolNoInstances(id string, timeout time.Duration) error {
+func waitPoolNoInstances(t *testing.T, id string, timeout time.Duration) error {
 	var timeWaited time.Duration // default is 0
 	var pool *params.Pool
 	var err error
 
-	slog.Info("Wait until pool has no instances", "pool_id", id)
+	t.Log("Wait until pool has no instances", "pool_id", id)
 	for timeWaited < timeout {
 		pool, err = getPool(cli, authToken, id)
 		if err != nil {
 			return err
 		}
-		slog.Info("Current pool instances", "instance_count", len(pool.Instances))
+		t.Log("Current pool instances", "instance_count", len(pool.Instances))
 		if len(pool.Instances) == 0 {
 			return nil
 		}
@@ -27,12 +27,12 @@ func waitPoolNoInstances(id string, timeout time.Duration) error {
 		timeWaited += 5 * time.Second
 	}
 
-	_ = dumpPoolInstancesDetails(pool.ID)
+	_ = dumpPoolInstancesDetails(t, pool.ID)
 
 	return fmt.Errorf("failed to wait for pool %s to have no instances", pool.ID)
 }
 
-func dumpPoolInstancesDetails(poolID string) error {
+func dumpPoolInstancesDetails(t *testing.T, poolID string) error {
 	pool, err := getPool(cli, authToken, poolID)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func dumpPoolInstancesDetails(poolID string) error {
 		if err != nil {
 			return err
 		}
-		slog.Info("Instance details", "instance_name", instance.Name)
+		t.Log("Instance details", "instance_name", instance.Name)
 		if err := printJSONResponse(instanceDetails); err != nil {
 			return err
 		}

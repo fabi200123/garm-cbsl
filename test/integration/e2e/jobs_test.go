@@ -2,63 +2,64 @@ package e2e
 
 import (
 	"fmt"
-	"log/slog"
+	"testing"
 	"time"
 
 	commonParams "github.com/cloudbase/garm-provider-common/params"
 	"github.com/cloudbase/garm/params"
 )
 
-func ValidateJobLifecycle(label string) {
-	slog.Info("Validate GARM job lifecycle", "label", label)
+func ValidateJobLifecycle(t *testing.T, label string) {
+	t.Log("Validate GARM job lifecycle", "label", label)
 
+	TriggerWorkflow(ghToken, orgName, repoName, workflowFileName, label)
 	// wait for job list to be updated
-	job, err := waitLabelledJob(label, 4*time.Minute)
+	job, err := waitLabelledJob(t, label, 4*time.Minute)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	// check expected job status
-	job, err = waitJobStatus(job.ID, params.JobStatusQueued, 4*time.Minute)
+	job, err = waitJobStatus(t, job.ID, params.JobStatusQueued, 4*time.Minute)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	job, err = waitJobStatus(job.ID, params.JobStatusInProgress, 4*time.Minute)
+	job, err = waitJobStatus(t, job.ID, params.JobStatusInProgress, 4*time.Minute)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	// check expected instance status
-	instance, err := waitInstanceStatus(job.RunnerName, commonParams.InstanceRunning, params.RunnerActive, 5*time.Minute)
+	instance, err := waitInstanceStatus(t, job.RunnerName, commonParams.InstanceRunning, params.RunnerActive, 5*time.Minute)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	// wait for job to be completed
-	_, err = waitJobStatus(job.ID, params.JobStatusCompleted, 4*time.Minute)
+	_, err = waitJobStatus(t, job.ID, params.JobStatusCompleted, 4*time.Minute)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	// wait for instance to be removed
-	err = WaitInstanceToBeRemoved(instance.Name, 5*time.Minute)
+	err = WaitInstanceToBeRemoved(t, instance.Name, 5*time.Minute)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	// wait for GARM to rebuild the pool running idle instances
-	err = WaitPoolInstances(instance.PoolID, commonParams.InstanceRunning, params.RunnerIdle, 5*time.Minute)
+	err = WaitPoolInstances(t, instance.PoolID, commonParams.InstanceRunning, params.RunnerIdle, 5*time.Minute)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 }
 
-func waitLabelledJob(label string, timeout time.Duration) (*params.Job, error) {
+func waitLabelledJob(t *testing.T, label string, timeout time.Duration) (*params.Job, error) {
 	var timeWaited time.Duration // default is 0
 	var jobs params.Jobs
 	var err error
 
-	slog.Info("Waiting for job", "label", label)
+	t.Log("Waiting for job", "label", label)
 	for timeWaited < timeout {
 		jobs, err = listJobs(cli, authToken)
 		if err != nil {
@@ -81,11 +82,11 @@ func waitLabelledJob(label string, timeout time.Duration) (*params.Job, error) {
 	return nil, fmt.Errorf("failed to wait job with label %s", label)
 }
 
-func waitJobStatus(id int64, status params.JobStatus, timeout time.Duration) (*params.Job, error) {
+func waitJobStatus(t *testing.T, id int64, status params.JobStatus, timeout time.Duration) (*params.Job, error) {
 	var timeWaited time.Duration // default is 0
 	var job *params.Job
 
-	slog.Info("Waiting for job to reach status", "job_id", id, "status", status)
+	t.Log("Waiting for job to reach status", "job_id", id, "status", status)
 	for timeWaited < timeout {
 		jobs, err := listJobs(cli, authToken)
 		if err != nil {

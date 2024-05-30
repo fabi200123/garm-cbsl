@@ -1,9 +1,9 @@
 package e2e
 
 import (
-	"log/slog"
 	"os"
 	"path/filepath"
+	"testing"
 
 	"github.com/cloudbase/garm/params"
 )
@@ -13,60 +13,62 @@ const (
 	dummyCredentialsName string = "dummy"
 )
 
-func MustDefaultGithubEndpoint() {
-	ep := GetGithubEndpoint("github.com")
-	if ep == nil {
-		panic("Default GitHub endpoint not found")
-	}
-
-	if ep.Name != "github.com" {
-		panic("Default GitHub endpoint name mismatch")
-	}
-}
-
-func checkEndpointParamsAreEqual(a, b params.GithubEndpoint) {
+func checkEndpointParamsAreEqual(t *testing.T, a, b params.GithubEndpoint) error {
 	if a.Name != b.Name {
-		panic("Endpoint name mismatch")
+		t.Fatal("Endpoint name mismatch")
 	}
 
 	if a.Description != b.Description {
-		panic("Endpoint description mismatch")
+		t.Fatal("Endpoint description mismatch")
 	}
 
 	if a.BaseURL != b.BaseURL {
-		panic("Endpoint base URL mismatch")
+		t.Fatal("Endpoint base URL mismatch")
 	}
 
 	if a.APIBaseURL != b.APIBaseURL {
-		panic("Endpoint API base URL mismatch")
+		t.Fatal("Endpoint API base URL mismatch")
 	}
 
 	if a.UploadBaseURL != b.UploadBaseURL {
-		panic("Endpoint upload base URL mismatch")
+		t.Fatal("Endpoint upload base URL mismatch")
 	}
 
 	if string(a.CACertBundle) != string(b.CACertBundle) {
-		panic("Endpoint CA cert bundle mismatch")
+		t.Fatal("Endpoint CA cert bundle mismatch")
+	}
+
+	return nil
+}
+
+func MustDefaultGithubEndpoint(t *testing.T) {
+	ep := GetGithubEndpoint(t, "github.com")
+	if ep == nil {
+		t.Fatal("Default GitHub endpoint not found")
+	}
+
+	if ep.Name != "github.com" {
+		t.Fatal("Default GitHub endpoint name mismatch")
 	}
 }
 
-func getTestFileContents(relPath string) []byte {
+func getTestFileContents(t *testing.T, relPath string) []byte {
 	baseDir := os.Getenv("GARM_CHECKOUT_DIR")
 	if baseDir == "" {
-		panic("GARM_CHECKOUT_DIR not set")
+		t.Fatal("GARM_CHECKOUT_DIR not set")
 	}
 	contents, err := os.ReadFile(filepath.Join(baseDir, "testdata", relPath))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return contents
 }
 
-func TestGithubEndpointOperations() {
-	slog.Info("Testing endpoint operations")
-	MustDefaultGithubEndpoint()
+func TestGithubEndpointOperations(t *testing.T) {
+	t.Log("Testing endpoint operations")
+	MustDefaultGithubEndpoint(t)
 
-	caBundle := getTestFileContents("certs/srv-pub.pem")
+	caBundle := getTestFileContents(t, "certs/srv-pub.pem")
 
 	endpointParams := params.CreateGithubEndpointParams{
 		Name:          "test-endpoint",
@@ -77,63 +79,63 @@ func TestGithubEndpointOperations() {
 		CACertBundle:  caBundle,
 	}
 
-	endpoint := CreateGithubEndpoint(endpointParams)
+	endpoint := CreateGithubEndpoint(t, endpointParams)
 	if endpoint.Name != endpointParams.Name {
-		panic("Endpoint name mismatch")
+		t.Fatal("Endpoint name mismatch")
 	}
 
 	if endpoint.Description != endpointParams.Description {
-		panic("Endpoint description mismatch")
+		t.Fatal("Endpoint description mismatch")
 	}
 
 	if endpoint.BaseURL != endpointParams.BaseURL {
-		panic("Endpoint base URL mismatch")
+		t.Fatal("Endpoint base URL mismatch")
 	}
 
 	if endpoint.APIBaseURL != endpointParams.APIBaseURL {
-		panic("Endpoint API base URL mismatch")
+		t.Fatal("Endpoint API base URL mismatch")
 	}
 
 	if endpoint.UploadBaseURL != endpointParams.UploadBaseURL {
-		panic("Endpoint upload base URL mismatch")
+		t.Fatal("Endpoint upload base URL mismatch")
 	}
 
 	if string(endpoint.CACertBundle) != string(caBundle) {
-		panic("Endpoint CA cert bundle mismatch")
+		t.Fatal("Endpoint CA cert bundle mismatch")
 	}
 
-	endpoint2 := GetGithubEndpoint(endpointParams.Name)
+	endpoint2 := GetGithubEndpoint(t, endpointParams.Name)
 	if endpoint == nil || endpoint2 == nil {
-		panic("endpoint is nil")
+		t.Fatal("endpoint is nil")
 	}
-	checkEndpointParamsAreEqual(*endpoint, *endpoint2)
+	checkEndpointParamsAreEqual(t, *endpoint, *endpoint2)
 
-	endpoints := ListGithubEndpoints()
+	endpoints := ListGithubEndpoints(t)
 	var found bool
 	for _, ep := range endpoints {
 		if ep.Name == endpointParams.Name {
-			checkEndpointParamsAreEqual(*endpoint, ep)
+			checkEndpointParamsAreEqual(t, *endpoint, ep)
 			found = true
 			break
 		}
 	}
 	if !found {
-		panic("Endpoint not found in list")
+		t.Fatal("Endpoint not found in list")
 	}
 
-	DeleteGithubEndpoint(endpoint.Name)
+	DeleteGithubEndpoint(t, endpoint.Name)
 }
 
-func TestGithubEndpointMustFailToDeleteDefaultGithubEndpoint() {
-	slog.Info("Testing error when deleting default github.com endpoint")
+func TestGithubEndpointMustFailToDeleteDefaultGithubEndpoint(t *testing.T) {
+	t.Log("Testing error when deleting default github.com endpoint")
 	if err := deleteGithubEndpoint(cli, authToken, "github.com"); err == nil {
-		panic("expected error when attempting to delete the default github.com endpoint")
+		t.Fatal("expected error when attempting to delete the default github.com endpoint")
 	}
 }
 
-func TestGithubEndpointFailsOnInvalidCABundle() {
-	slog.Info("Testing endpoint creation with invalid CA cert bundle")
-	badCABundle := getTestFileContents("certs/srv-key.pem")
+func TestGithubEndpointFailsOnInvalidCABundle(t *testing.T) {
+	t.Log("Testing endpoint creation with invalid CA cert bundle")
+	badCABundle := getTestFileContents(t, "certs/srv-key.pem")
 
 	endpointParams := params.CreateGithubEndpointParams{
 		Name:          "dummy",
@@ -145,12 +147,12 @@ func TestGithubEndpointFailsOnInvalidCABundle() {
 	}
 
 	if _, err := createGithubEndpoint(cli, authToken, endpointParams); err == nil {
-		panic("expected error when creating endpoint with invalid CA cert bundle")
+		t.Fatal("expected error when creating endpoint with invalid CA cert bundle")
 	}
 }
 
-func TestGithubEndpointDeletionFailsWhenCredentialsExist() {
-	slog.Info("Testing endpoint deletion when credentials exist")
+func TestGithubEndpointDeletionFailsWhenCredentialsExist(t *testing.T) {
+	t.Log("Testing endpoint deletion when credentials exist")
 	endpointParams := params.CreateGithubEndpointParams{
 		Name:          "dummy",
 		Description:   "Dummy endpoint",
@@ -159,19 +161,19 @@ func TestGithubEndpointDeletionFailsWhenCredentialsExist() {
 		UploadBaseURL: "https://uploads.ghes.example.com/",
 	}
 
-	endpoint := CreateGithubEndpoint(endpointParams)
-	creds := createDummyCredentials("test-creds", endpoint.Name)
+	endpoint := CreateGithubEndpoint(t, endpointParams)
+	creds := createDummyCredentials(t, "test-creds", endpoint.Name)
 
 	if err := deleteGithubEndpoint(cli, authToken, endpoint.Name); err == nil {
-		panic("expected error when deleting endpoint with credentials")
+		t.Fatal("expected error when deleting endpoint with credentials")
 	}
 
-	DeleteGithubCredential(int64(creds.ID))
-	DeleteGithubEndpoint(endpoint.Name)
+	DeleteGithubCredential(t, int64(creds.ID))
+	DeleteGithubEndpoint(t, endpoint.Name)
 }
 
-func TestGithubEndpointFailsOnDuplicateName() {
-	slog.Info("Testing endpoint creation with duplicate name")
+func TestGithubEndpointFailsOnDuplicateName(t *testing.T) {
+	t.Log("Testing endpoint creation with duplicate name")
 	endpointParams := params.CreateGithubEndpointParams{
 		Name:          "github.com",
 		Description:   "Dummy endpoint",
@@ -181,20 +183,20 @@ func TestGithubEndpointFailsOnDuplicateName() {
 	}
 
 	if _, err := createGithubEndpoint(cli, authToken, endpointParams); err == nil {
-		panic("expected error when creating endpoint with duplicate name")
+		t.Fatal("expected error when creating endpoint with duplicate name")
 	}
 }
 
-func TestGithubEndpointUpdateEndpoint() {
-	slog.Info("Testing endpoint update")
-	endpoint := createDummyEndpoint("dummy")
-	defer DeleteGithubEndpoint(endpoint.Name)
+func TestGithubEndpointUpdateEndpoint(t *testing.T) {
+	t.Log("Testing endpoint update")
+	endpoint := createDummyEndpoint(t, "dummy")
+	defer DeleteGithubEndpoint(t, endpoint.Name)
 
 	newDescription := "Updated description"
 	newBaseURL := "https://ghes2.example.com"
 	newAPIBaseURL := "https://api.ghes2.example.com/"
 	newUploadBaseURL := "https://uploads.ghes2.example.com/"
-	newCABundle := getTestFileContents("certs/srv-pub.pem")
+	newCABundle := getTestFileContents(t, "certs/srv-pub.pem")
 
 	updateParams := params.UpdateGithubEndpointParams{
 		Description:   &newDescription,
@@ -206,35 +208,35 @@ func TestGithubEndpointUpdateEndpoint() {
 
 	updated, err := updateGithubEndpoint(cli, authToken, endpoint.Name, updateParams)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	if updated.Name != endpoint.Name {
-		panic("Endpoint name mismatch")
+		t.Fatal("Endpoint name mismatch")
 	}
 
 	if updated.Description != newDescription {
-		panic("Endpoint description mismatch")
+		t.Fatal("Endpoint description mismatch")
 	}
 
 	if updated.BaseURL != newBaseURL {
-		panic("Endpoint base URL mismatch")
+		t.Fatal("Endpoint base URL mismatch")
 	}
 
 	if updated.APIBaseURL != newAPIBaseURL {
-		panic("Endpoint API base URL mismatch")
+		t.Fatal("Endpoint API base URL mismatch")
 	}
 
 	if updated.UploadBaseURL != newUploadBaseURL {
-		panic("Endpoint upload base URL mismatch")
+		t.Fatal("Endpoint upload base URL mismatch")
 	}
 
 	if string(updated.CACertBundle) != string(newCABundle) {
-		panic("Endpoint CA cert bundle mismatch")
+		t.Fatal("Endpoint CA cert bundle mismatch")
 	}
 }
 
-func createDummyEndpoint(name string) *params.GithubEndpoint {
+func createDummyEndpoint(t *testing.T, name string) *params.GithubEndpoint {
 	endpointParams := params.CreateGithubEndpointParams{
 		Name:          name,
 		Description:   "Dummy endpoint",
@@ -243,5 +245,5 @@ func createDummyEndpoint(name string) *params.GithubEndpoint {
 		UploadBaseURL: "https://uploads.ghes.example.com/",
 	}
 
-	return CreateGithubEndpoint(endpointParams)
+	return CreateGithubEndpoint(t, endpointParams)
 }

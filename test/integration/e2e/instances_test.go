@@ -3,24 +3,25 @@ package e2e
 import (
 	"fmt"
 	"log/slog"
+	"testing"
 	"time"
 
 	commonParams "github.com/cloudbase/garm-provider-common/params"
 	"github.com/cloudbase/garm/params"
 )
 
-func waitInstanceStatus(name string, status commonParams.InstanceStatus, runnerStatus params.RunnerStatus, timeout time.Duration) (*params.Instance, error) {
+func waitInstanceStatus(t *testing.T, name string, status commonParams.InstanceStatus, runnerStatus params.RunnerStatus, timeout time.Duration) (*params.Instance, error) {
 	var timeWaited time.Duration // default is 0
 	var instance *params.Instance
 	var err error
 
-	slog.Info("Waiting for instance to reach desired status", "instance", name, "desired_status", status, "desired_runner_status", runnerStatus)
+	t.Log("Waiting for instance to reach desired status", "instance", name, "desired_status", status, "desired_runner_status", runnerStatus)
 	for timeWaited < timeout {
 		instance, err = getInstance(cli, authToken, name)
 		if err != nil {
 			return nil, err
 		}
-		slog.Info("Instance status", "instance_name", name, "status", instance.Status, "runner_status", instance.RunnerStatus)
+		t.Log("Instance status", "instance_name", name, "status", instance.Status, "runner_status", instance.RunnerStatus)
 		if instance.Status == status && instance.RunnerStatus == runnerStatus {
 			return instance, nil
 		}
@@ -34,20 +35,20 @@ func waitInstanceStatus(name string, status commonParams.InstanceStatus, runnerS
 	return nil, fmt.Errorf("timeout waiting for instance %s status to reach status %s and runner status %s", name, status, runnerStatus)
 }
 
-func DeleteInstance(name string, forceRemove, bypassGHUnauthorized bool) {
-	slog.Info("Delete instance", "instance_name", name, "force_remove", forceRemove)
+func DeleteInstance(t *testing.T, name string, forceRemove, bypassGHUnauthorized bool) {
+	t.Log("Delete instance", "instance_name", name, "force_remove", forceRemove)
 	if err := deleteInstance(cli, authToken, name, forceRemove, bypassGHUnauthorized); err != nil {
 		slog.Error("Failed to delete instance", "instance_name", name, "error", err)
-		panic(err)
+		t.Fatal(err)
 	}
-	slog.Info("Instance deletion initiated", "instance_name", name)
+	t.Log("Instance deletion initiated", "instance_name", name)
 }
 
-func WaitInstanceToBeRemoved(name string, timeout time.Duration) error {
+func WaitInstanceToBeRemoved(t *testing.T, name string, timeout time.Duration) error {
 	var timeWaited time.Duration // default is 0
 	var instance *params.Instance
 
-	slog.Info("Waiting for instance to be removed", "instance_name", name)
+	t.Log("Waiting for instance to be removed", "instance_name", name)
 	for timeWaited < timeout {
 		instances, err := listInstances(cli, authToken)
 		if err != nil {
@@ -77,7 +78,7 @@ func WaitInstanceToBeRemoved(name string, timeout time.Duration) error {
 	return fmt.Errorf("instance %s was not removed within the timeout", name)
 }
 
-func WaitPoolInstances(poolID string, status commonParams.InstanceStatus, runnerStatus params.RunnerStatus, timeout time.Duration) error {
+func WaitPoolInstances(t *testing.T, poolID string, status commonParams.InstanceStatus, runnerStatus params.RunnerStatus, timeout time.Duration) error {
 	var timeWaited time.Duration // default is 0
 
 	pool, err := getPool(cli, authToken, poolID)
@@ -85,7 +86,7 @@ func WaitPoolInstances(poolID string, status commonParams.InstanceStatus, runner
 		return err
 	}
 
-	slog.Info("Waiting for pool instances to reach desired status", "pool_id", poolID, "desired_status", status, "desired_runner_status", runnerStatus)
+	t.Log("Waiting for pool instances to reach desired status", "pool_id", poolID, "desired_status", status, "desired_runner_status", runnerStatus)
 	for timeWaited < timeout {
 		poolInstances, err := listPoolInstances(cli, authToken, poolID)
 		if err != nil {
@@ -99,7 +100,7 @@ func WaitPoolInstances(poolID string, status commonParams.InstanceStatus, runner
 			}
 		}
 
-		slog.Info(
+		t.Log(
 			"Pool instance reached status",
 			"pool_id", poolID,
 			"status", status,
@@ -113,7 +114,7 @@ func WaitPoolInstances(poolID string, status commonParams.InstanceStatus, runner
 		timeWaited += 5 * time.Second
 	}
 
-	_ = dumpPoolInstancesDetails(pool.ID)
+	_ = dumpPoolInstancesDetails(t, pool.ID)
 
 	return fmt.Errorf("timeout waiting for pool %s instances to reach status: %s and runner status: %s", poolID, status, runnerStatus)
 }

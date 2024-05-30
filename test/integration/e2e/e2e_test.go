@@ -2,196 +2,196 @@ package e2e
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
+	"testing"
 	"time"
 
 	"github.com/cloudbase/garm/params"
 )
 
-func ListCredentials() params.Credentials {
-	slog.Info("List credentials")
+func ListCredentials(t *testing.T) params.Credentials {
+	t.Log("List credentials")
 	credentials, err := listCredentials(cli, authToken)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return credentials
 }
 
-func CreateGithubCredentials(credentialsParams params.CreateGithubCredentialsParams) *params.GithubCredentials {
-	slog.Info("Create GitHub credentials")
+func CreateGithubCredentials(t *testing.T, credentialsParams params.CreateGithubCredentialsParams) *params.GithubCredentials {
+	t.Logf("Create GitHub credentials")
 	credentials, err := createGithubCredentials(cli, authToken, credentialsParams)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return credentials
 }
 
-func GetGithubCredential(id int64) *params.GithubCredentials {
-	slog.Info("Get GitHub credential")
+func GetGithubCredential(t *testing.T, id int64) *params.GithubCredentials {
+	t.Logf("Get GitHub credential")
 	credentials, err := getGithubCredential(cli, authToken, id)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return credentials
 }
 
-func DeleteGithubCredential(id int64) {
-	slog.Info("Delete GitHub credential")
+func DeleteGithubCredential(t *testing.T, id int64) {
+	t.Log("Delete GitHub credential")
 	if err := deleteGithubCredentials(cli, authToken, id); err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 }
 
-func CreateGithubEndpoint(endpointParams params.CreateGithubEndpointParams) *params.GithubEndpoint {
-	slog.Info("Create GitHub endpoint")
+func CreateGithubEndpoint(t *testing.T, endpointParams params.CreateGithubEndpointParams) *params.GithubEndpoint {
+	t.Log("Create GitHub endpoint")
 	endpoint, err := createGithubEndpoint(cli, authToken, endpointParams)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return endpoint
 }
 
-func ListGithubEndpoints() params.GithubEndpoints {
-	slog.Info("List GitHub endpoints")
+func ListGithubEndpoints(t *testing.T) params.GithubEndpoints {
+	t.Log("List GitHub endpoints")
 	endpoints, err := listGithubEndpoints(cli, authToken)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return endpoints
 }
 
-func GetGithubEndpoint(name string) *params.GithubEndpoint {
-	slog.Info("Get GitHub endpoint")
+func GetGithubEndpoint(t *testing.T, name string) *params.GithubEndpoint {
+	t.Log("Get GitHub endpoint")
 	endpoint, err := getGithubEndpoint(cli, authToken, name)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return endpoint
 }
 
-func DeleteGithubEndpoint(name string) {
-	slog.Info("Delete GitHub endpoint")
+func DeleteGithubEndpoint(t *testing.T, name string) {
+	t.Log("Delete GitHub endpoint")
 	if err := deleteGithubEndpoint(cli, authToken, name); err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 }
 
-func UpdateGithubEndpoint(name string, updateParams params.UpdateGithubEndpointParams) *params.GithubEndpoint {
-	slog.Info("Update GitHub endpoint")
+func UpdateGithubEndpoint(t *testing.T, name string, updateParams params.UpdateGithubEndpointParams) *params.GithubEndpoint {
+	t.Log("Update GitHub endpoint")
 	updated, err := updateGithubEndpoint(cli, authToken, name, updateParams)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return updated
 }
 
-func ListProviders() params.Providers {
-	slog.Info("List providers")
+func ListProviders(t *testing.T) params.Providers {
+	t.Log("List providers")
 	providers, err := listProviders(cli, authToken)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return providers
 }
 
-func GetMetricsToken() {
-	slog.Info("Get metrics token")
+func GetMetricsToken(t *testing.T) {
+	t.Log("Get metrics token")
 	_, err := getMetricsToken(cli, authToken)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 }
 
-func GetControllerInfo() *params.ControllerInfo {
-	slog.Info("Get controller info")
+func GetControllerInfo(t *testing.T) *params.ControllerInfo {
+	t.Log("Get controller info")
 	controllerInfo, err := getControllerInfo(cli, authToken)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	if err := appendCtrlInfoToGitHubEnv(&controllerInfo); err != nil {
-		panic(err)
+	if err := appendCtrlInfoToGitHubEnv(t, &controllerInfo); err != nil {
+		t.Fatal(err)
 	}
 	if err := printJSONResponse(controllerInfo); err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return &controllerInfo
 }
 
-func GracefulCleanup() {
-	slog.Info("Graceful cleanup")
+func GracefulCleanup(t *testing.T) {
+	t.Log("Graceful cleanup")
 	// disable all the pools
 	pools, err := listPools(cli, authToken)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	enabled := false
 	poolParams := params.UpdatePoolParams{Enabled: &enabled}
 	for _, pool := range pools {
 		if _, err := updatePool(cli, authToken, pool.ID, poolParams); err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
-		slog.Info("Pool disabled", "pool_id", pool.ID, "stage", "graceful_cleanup")
+		t.Log("Pool disabled", "pool_id", pool.ID, "stage", "graceful_cleanup")
 	}
 
 	// delete all the instances
 	for _, pool := range pools {
 		poolInstances, err := listPoolInstances(cli, authToken, pool.ID)
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 		for _, instance := range poolInstances {
 			if err := deleteInstance(cli, authToken, instance.Name, false, false); err != nil {
-				panic(err)
+				t.Fatal(err)
 			}
-			slog.Info("Instance deletion initiated", "instance", instance.Name, "stage", "graceful_cleanup")
+			t.Log("Instance deletion initiated", "instance", instance.Name, "stage", "graceful_cleanup")
 		}
 	}
 
 	// wait for all instances to be deleted
 	for _, pool := range pools {
-		if err := waitPoolNoInstances(pool.ID, 3*time.Minute); err != nil {
-			panic(err)
+		if err := waitPoolNoInstances(t, pool.ID, 3*time.Minute); err != nil {
+			t.Fatal(err)
 		}
 	}
 
 	// delete all the pools
 	for _, pool := range pools {
 		if err := deletePool(cli, authToken, pool.ID); err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
-		slog.Info("Pool deleted", "pool_id", pool.ID, "stage", "graceful_cleanup")
+		t.Log("Pool deleted", "pool_id", pool.ID, "stage", "graceful_cleanup")
 	}
 
 	// delete all the repositories
 	repos, err := listRepos(cli, authToken)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	for _, repo := range repos {
 		if err := deleteRepo(cli, authToken, repo.ID); err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
-		slog.Info("Repo deleted", "repo_id", repo.ID, "stage", "graceful_cleanup")
+		t.Log("Repo deleted", "repo_id", repo.ID, "stage", "graceful_cleanup")
 	}
 
 	// delete all the organizations
 	orgs, err := listOrgs(cli, authToken)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	for _, org := range orgs {
 		if err := deleteOrg(cli, authToken, org.ID); err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
-		slog.Info("Org deleted", "org_id", org.ID, "stage", "graceful_cleanup")
+		t.Log("Org deleted", "org_id", org.ID, "stage", "graceful_cleanup")
 	}
 }
 
-func appendCtrlInfoToGitHubEnv(controllerInfo *params.ControllerInfo) error {
+func appendCtrlInfoToGitHubEnv(t *testing.T, controllerInfo *params.ControllerInfo) error {
 	envFile, found := os.LookupEnv("GITHUB_ENV")
 	if !found {
-		slog.Info("GITHUB_ENV not set, skipping appending controller info")
+		t.Log("GITHUB_ENV not set, skipping appending controller info")
 		return nil
 	}
 	file, err := os.OpenFile(envFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)

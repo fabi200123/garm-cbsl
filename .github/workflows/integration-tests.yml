@@ -58,7 +58,7 @@ jobs:
           make integration 2>&1
         env:
           GARM_BASE_URL: ${{ steps.ngrok.outputs.tunnel-url }}
-          ORG_NAME: gsamfira
+          ORG_NAME: Garm-testing-1
           REPO_NAME: garm-testing
           CREDENTIALS_NAME: test-garm-creds
           WORKFLOW_FILE_NAME: test.yml
@@ -88,6 +88,6 @@ jobs:
           go run ./test/integration/gh_cleanup/main.go || true
         env:
           GARM_BASE_URL: ${{ steps.ngrok.outputs.tunnel-url }}
-          ORG_NAME: gsamfira
+          ORG_NAME: Garm-testing-1
           REPO_NAME: garm-testing
           GH_TOKEN: ${{ secrets.GH_OAUTH_TOKEN }}

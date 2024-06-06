@@ -83,7 +83,7 @@ integration: build ## Run integration tests
 	}
 	trap cleanup EXIT
 	@./test/integration/scripts/setup-garm.sh
-	@$(GO) run ./test/integration/main.go
+	@$(GO) test --v ./integration/.
 
 ##@ Development
 

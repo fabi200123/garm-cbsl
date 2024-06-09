@@ -41,6 +41,7 @@ func TestGithubCredentialsFailsToDeleteWhenInUse(t *testing.T) {
 
 	err = deleteGithubCredentials(cli, authToken, int64(creds.ID))
 	assert.Error(t, err, "expected error when deleting credentials in use")
+	t.Parallel()
 }
 
 func TestGithubCredentialsFailsOnInvalidAuthType(t *testing.T) {

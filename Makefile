@@ -59,7 +59,7 @@ release: build-static create-release-files ## Create a release
 ##@ Lint / Verify
 .PHONY: lint
 lint: golangci-lint $(GOLANGCI_LINT) ## Run linting.
-	$(GOLANGCI_LINT) run -v --build-tags testing $(GOLANGCI_LINT_EXTRA_ARGS)
+	$(GOLANGCI_LINT) run -v --build-tags=testing,integration $(GOLANGCI_LINT_EXTRA_ARGS)
 
 .PHONY: lint-fix
 lint-fix: golangci-lint $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linte
@@ -68,8 +68,8 @@ lint-fix: golangci-lint $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixer
 verify-vendor: ## verify if all the go.mod/go.sum files are up-to-date
 	$(eval TMPDIR := $(shell mktemp -d))
 	@cp -R ${ROOTDIR} ${TMPDIR}
-	@(cd ${TMPDIR}/garm && ${GO} mod tidy)
-	@diff -r -u -q ${ROOTDIR} ${TMPDIR}/garm >/dev/null 2>&1; if [ "$$?" -ne 0 ];then echo "please run: go mod tidy && go mod vendor"; exit 1; fi
+	@(cd ${TMPDIR}/garm-cbsl && ${GO} mod tidy)
+	@diff -r -u -q ${ROOTDIR} ${TMPDIR}/garm-cbsl >/dev/null 2>&1; if [ "$$?" -ne 0 ];then echo "please run: go mod tidy && go mod vendor"; exit 1; fi
 	@rm -rf ${TMPDIR}
 
 verify: verify-vendor lint fmtcheck ## Run all verify-* targets
@@ -84,7 +84,7 @@ integration: build ## Run integration tests
 	}
 	trap cleanup EXIT
 	@./test/integration/scripts/setup-garm.sh
-	@$(GO) run ./test/integration/main.go
+	@$(GO) test -v ./test/integration/. -timeout=30m -tags=integration
 
 ##@ Development
 

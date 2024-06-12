@@ -8,7 +8,6 @@ import (
 	commonParams "github.com/cloudbase/garm-provider-common/params"
 	"github.com/cloudbase/garm/params"
 	"github.com/google/go-github/v57/github"
-	"github.com/stretchr/testify/assert"
 )
 
 func (suite *GarmSuite) TestWorkflowJobs() {
@@ -32,7 +31,7 @@ func (suite *GarmSuite) TriggerWorkflow(ghToken, orgName, repoName, workflowFile
 		},
 	}
 	_, err := client.Actions.CreateWorkflowDispatchEventByFileName(context.Background(), orgName, repoName, workflowFileName, eventReq)
-	assert.NoError(t, err, "error triggering workflow")
+	suite.NoError(err, "error triggering workflow")
 }
 
 func (suite *GarmSuite) ValidateJobLifecycle(label string) {
@@ -41,30 +40,30 @@ func (suite *GarmSuite) ValidateJobLifecycle(label string) {
 
 	// wait for job list to be updated
 	job, err := suite.waitLabelledJob(label, 4*time.Minute)
-	assert.NoError(t, err, "error waiting for job to be created")
+	suite.NoError(err, "error waiting for job to be created")
 
 	// check expected job status
 	job, err = suite.waitJobStatus(job.ID, params.JobStatusQueued, 4*time.Minute)
-	assert.NoError(t, err, "error waiting for job to be queued")
+	suite.NoError(err, "error waiting for job to be queued")
 
 	job, err = suite.waitJobStatus(job.ID, params.JobStatusInProgress, 4*time.Minute)
-	assert.NoError(t, err, "error waiting for job to be in progress")
+	suite.NoError(err, "error waiting for job to be in progress")
 
 	// check expected instance status
 	instance, err := suite.waitInstanceStatus(job.RunnerName, commonParams.InstanceRunning, params.RunnerActive, 5*time.Minute)
-	assert.NoError(t, err, "error waiting for instance to be running")
+	suite.NoError(err, "error waiting for instance to be running")
 
 	// wait for job to be completed
 	_, err = suite.waitJobStatus(job.ID, params.JobStatusCompleted, 4*time.Minute)
-	assert.NoError(t, err, "error waiting for job to be completed")
+	suite.NoError(err, "error waiting for job to be completed")
 
 	// wait for instance to be removed
 	err = suite.WaitInstanceToBeRemoved(instance.Name, 5*time.Minute)
-	assert.NoError(t, err, "error waiting for instance to be removed")
+	suite.NoError(err, "error waiting for instance to be removed")
 
 	// wait for GARM to rebuild the pool running idle instances
 	err = suite.WaitPoolInstances(instance.PoolID, commonParams.InstanceRunning, params.RunnerIdle, 5*time.Minute)
-	assert.NoError(t, err, "error waiting for pool instances to be running idle")
+	suite.NoError(err, "error waiting for pool instances to be running idle")
 }
 
 func (suite *GarmSuite) waitLabelledJob(label string, timeout time.Duration) (*params.Job, error) {

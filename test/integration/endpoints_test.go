@@ -2,7 +2,6 @@ package integration
 
 import (
 	"github.com/cloudbase/garm/params"
-	"github.com/stretchr/testify/assert"
 )
 
 func (suite *GarmSuite) TestGithubEndpointOperations() {
@@ -11,7 +10,7 @@ func (suite *GarmSuite) TestGithubEndpointOperations() {
 	suite.MustDefaultGithubEndpoint()
 
 	caBundle, err := getTestFileContents("certs/srv-pub.pem")
-	assert.NoError(t, err)
+	suite.NoError(err)
 
 	endpointParams := params.CreateGithubEndpointParams{
 		Name:          "test-endpoint",
@@ -23,22 +22,22 @@ func (suite *GarmSuite) TestGithubEndpointOperations() {
 	}
 
 	endpoint, err := suite.CreateGithubEndpoint(endpointParams)
-	assert.NoError(t, err)
-	assert.Equal(t, endpoint.Name, endpointParams.Name, "Endpoint name mismatch")
-	assert.Equal(t, endpoint.Description, endpointParams.Description, "Endpoint description mismatch")
-	assert.Equal(t, endpoint.BaseURL, endpointParams.BaseURL, "Endpoint base URL mismatch")
-	assert.Equal(t, endpoint.APIBaseURL, endpointParams.APIBaseURL, "Endpoint API base URL mismatch")
-	assert.Equal(t, endpoint.UploadBaseURL, endpointParams.UploadBaseURL, "Endpoint upload base URL mismatch")
-	assert.Equal(t, string(endpoint.CACertBundle), string(caBundle), "Endpoint CA cert bundle mismatch")
+	suite.NoError(err)
+	suite.Equal(endpoint.Name, endpointParams.Name, "Endpoint name mismatch")
+	suite.Equal(endpoint.Description, endpointParams.Description, "Endpoint description mismatch")
+	suite.Equal(endpoint.BaseURL, endpointParams.BaseURL, "Endpoint base URL mismatch")
+	suite.Equal(endpoint.APIBaseURL, endpointParams.APIBaseURL, "Endpoint API base URL mismatch")
+	suite.Equal(endpoint.UploadBaseURL, endpointParams.UploadBaseURL, "Endpoint upload base URL mismatch")
+	suite.Equal(string(endpoint.CACertBundle), string(caBundle), "Endpoint CA cert bundle mismatch")
 
 	endpoint2 := suite.GetGithubEndpoint(endpointParams.Name)
-	assert.NotNil(t, endpoint, "endpoint is nil")
-	assert.NotNil(t, endpoint2, "endpoint2 is nil")
+	suite.NotNil(endpoint, "endpoint is nil")
+	suite.NotNil(endpoint2, "endpoint2 is nil")
 
 	err = checkEndpointParamsAreEqual(*endpoint, *endpoint2)
-	assert.NoError(t, err, "endpoint params are not equal")
+	suite.NoError(err, "endpoint params are not equal")
 	endpoints := suite.ListGithubEndpoints()
-	assert.NoError(t, err, "error listing github endpoints")
+	suite.NoError(err, "error listing github endpoints")
 	var found bool
 	for _, ep := range endpoints {
 		if ep.Name == endpointParams.Name {
@@ -47,24 +46,24 @@ func (suite *GarmSuite) TestGithubEndpointOperations() {
 			break
 		}
 	}
-	assert.Equal(t, found, true, "endpoint not found in list")
+	suite.Equal(found, true, "endpoint not found in list")
 
 	err = suite.DeleteGithubEndpoint(endpoint.Name)
-	assert.NoError(t, err, "error deleting github endpoint")
+	suite.NoError(err, "error deleting github endpoint")
 }
 
 func (suite *GarmSuite) TestGithubEndpointMustFailToDeleteDefaultGithubEndpoint() {
 	t := suite.T()
 	t.Log("Testing error when deleting default github.com endpoint")
 	err := deleteGithubEndpoint(suite.cli, suite.authToken, "github.com")
-	assert.Error(t, err, "expected error when attempting to delete the default github.com endpoint")
+	suite.Error(err, "expected error when attempting to delete the default github.com endpoint")
 }
 
 func (suite *GarmSuite) TestGithubEndpointFailsOnInvalidCABundle() {
 	t := suite.T()
 	t.Log("Testing endpoint creation with invalid CA cert bundle")
 	badCABundle, err := getTestFileContents("certs/srv-key.pem")
-	assert.NoError(t, err, "error reading CA cert bundle")
+	suite.NoError(err, "error reading CA cert bundle")
 
 	endpointParams := params.CreateGithubEndpointParams{
 		Name:          "dummy",
@@ -76,7 +75,7 @@ func (suite *GarmSuite) TestGithubEndpointFailsOnInvalidCABundle() {
 	}
 
 	_, err = createGithubEndpoint(suite.cli, suite.authToken, endpointParams)
-	assert.Error(t, err, "expected error when creating endpoint with invalid CA cert bundle")
+	suite.Error(err, "expected error when creating endpoint with invalid CA cert bundle")
 }
 
 func (suite *GarmSuite) TestGithubEndpointDeletionFailsWhenCredentialsExist() {
@@ -91,17 +90,17 @@ func (suite *GarmSuite) TestGithubEndpointDeletionFailsWhenCredentialsExist() {
 	}
 
 	endpoint, err := suite.CreateGithubEndpoint(endpointParams)
-	assert.NoError(t, err, "error creating github endpoint")
+	suite.NoError(err, "error creating github endpoint")
 	creds, err := suite.createDummyCredentials("test-creds", endpoint.Name)
-	assert.NoError(t, err, "error creating dummy credentials")
+	suite.NoError(err, "error creating dummy credentials")
 
 	err = deleteGithubEndpoint(suite.cli, suite.authToken, endpoint.Name)
-	assert.Error(t, err, "expected error when deleting endpoint with credentials")
+	suite.Error(err, "expected error when deleting endpoint with credentials")
 
 	err = suite.DeleteGithubCredential(int64(creds.ID))
-	assert.NoError(t, err, "error deleting credentials")
+	suite.NoError(err, "error deleting credentials")
 	err = suite.DeleteGithubEndpoint(endpoint.Name)
-	assert.NoError(t, err, "error deleting endpoint")
+	suite.NoError(err, "error deleting endpoint")
 }
 
 func (suite *GarmSuite) TestGithubEndpointFailsOnDuplicateName() {
@@ -116,14 +115,14 @@ func (suite *GarmSuite) TestGithubEndpointFailsOnDuplicateName() {
 	}
 
 	_, err := createGithubEndpoint(suite.cli, suite.authToken, endpointParams)
-	assert.Error(t, err, "expected error when creating endpoint with duplicate name")
+	suite.Error(err, "expected error when creating endpoint with duplicate name")
 }
 
 func (suite *GarmSuite) TestGithubEndpointUpdateEndpoint() {
 	t := suite.T()
 	t.Log("Testing endpoint update")
 	endpoint, err := suite.createDummyEndpoint("dummy")
-	assert.NoError(t, err, "error creating dummy endpoint")
+	suite.NoError(err, "error creating dummy endpoint")
 	defer suite.DeleteGithubEndpoint(endpoint.Name)
 
 	newDescription := "Updated description"
@@ -131,7 +130,7 @@ func (suite *GarmSuite) TestGithubEndpointUpdateEndpoint() {
 	newAPIBaseURL := "https://api.ghes2.example.com/"
 	newUploadBaseURL := "https://uploads.ghes2.example.com/"
 	newCABundle, err := getTestFileContents("certs/srv-pub.pem")
-	assert.NoError(t, err, "error reading CA cert bundle")
+	suite.NoError(err, "error reading CA cert bundle")
 
 	updateParams := params.UpdateGithubEndpointParams{
 		Description:   &newDescription,
@@ -142,29 +141,28 @@ func (suite *GarmSuite) TestGithubEndpointUpdateEndpoint() {
 	}
 
 	updated, err := updateGithubEndpoint(suite.cli, suite.authToken, endpoint.Name, updateParams)
-	assert.NoError(t, err, "error updating github endpoint")
+	suite.NoError(err, "error updating github endpoint")
 
-	assert.Equal(t, updated.Name, endpoint.Name, "Endpoint name mismatch")
-	assert.Equal(t, updated.Description, newDescription, "Endpoint description mismatch")
-	assert.Equal(t, updated.BaseURL, newBaseURL, "Endpoint base URL mismatch")
-	assert.Equal(t, updated.APIBaseURL, newAPIBaseURL, "Endpoint API base URL mismatch")
-	assert.Equal(t, updated.UploadBaseURL, newUploadBaseURL, "Endpoint upload base URL mismatch")
-	assert.Equal(t, string(updated.CACertBundle), string(newCABundle), "Endpoint CA cert bundle mismatch")
+	suite.Equal(updated.Name, endpoint.Name, "Endpoint name mismatch")
+	suite.Equal(updated.Description, newDescription, "Endpoint description mismatch")
+	suite.Equal(updated.BaseURL, newBaseURL, "Endpoint base URL mismatch")
+	suite.Equal(updated.APIBaseURL, newAPIBaseURL, "Endpoint API base URL mismatch")
+	suite.Equal(updated.UploadBaseURL, newUploadBaseURL, "Endpoint upload base URL mismatch")
+	suite.Equal(string(updated.CACertBundle), string(newCABundle), "Endpoint CA cert bundle mismatch")
 }
 
 func (suite *GarmSuite) MustDefaultGithubEndpoint() {
-	t := suite.T()
 	ep := suite.GetGithubEndpoint("github.com")
 
-	assert.NotNil(t, ep, "default GitHub endpoint not found")
-	assert.Equal(t, ep.Name, "github.com", "default GitHub endpoint name mismatch")
+	suite.NotNil(ep, "default GitHub endpoint not found")
+	suite.Equal(ep.Name, "github.com", "default GitHub endpoint name mismatch")
 }
 
 func (suite *GarmSuite) GetGithubEndpoint(name string) *params.GithubEndpoint {
 	t := suite.T()
 	t.Log("Get GitHub endpoint")
 	endpoint, err := getGithubEndpoint(suite.cli, suite.authToken, name)
-	assert.NoError(t, err, "error getting GitHub endpoint")
+	suite.NoError(err, "error getting GitHub endpoint")
 
 	return endpoint
 }
@@ -173,7 +171,7 @@ func (suite *GarmSuite) CreateGithubEndpoint(params params.CreateGithubEndpointP
 	t := suite.T()
 	t.Log("Create GitHub endpoint")
 	endpoint, err := createGithubEndpoint(suite.cli, suite.authToken, params)
-	assert.NoError(t, err, "error creating GitHub endpoint")
+	suite.NoError(err, "error creating GitHub endpoint")
 
 	return endpoint, nil
 }
@@ -182,7 +180,7 @@ func (suite *GarmSuite) DeleteGithubEndpoint(name string) error {
 	t := suite.T()
 	t.Log("Delete GitHub endpoint")
 	err := deleteGithubEndpoint(suite.cli, suite.authToken, name)
-	assert.NoError(t, err, "error deleting GitHub endpoint")
+	suite.NoError(err, "error deleting GitHub endpoint")
 
 	return nil
 }
@@ -191,7 +189,7 @@ func (suite *GarmSuite) ListGithubEndpoints() params.GithubEndpoints {
 	t := suite.T()
 	t.Log("List GitHub endpoints")
 	endpoints, err := listGithubEndpoints(suite.cli, suite.authToken)
-	assert.NoError(t, err, "error listing GitHub endpoints")
+	suite.NoError(err, "error listing GitHub endpoints")
 
 	return endpoints
 }

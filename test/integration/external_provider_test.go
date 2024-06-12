@@ -9,7 +9,6 @@ import (
 	clientInstances "github.com/cloudbase/garm/client/instances"
 	"github.com/cloudbase/garm/params"
 	"github.com/go-openapi/runtime"
-	"github.com/stretchr/testify/assert"
 )
 
 func (suite *GarmSuite) TestExternalProvider() {
@@ -31,15 +30,15 @@ func (suite *GarmSuite) TestExternalProvider() {
 	t.Logf("Updated repo pool with pool_id %s with new_params %+v", repoPool2.ID, newParams)
 
 	err := suite.WaitPoolInstances(repoPool2.ID, commonParams.InstanceRunning, params.RunnerPending, 1*time.Minute)
-	assert.NoError(t, err, "error waiting for pool instances to be running")
+	suite.NoError(err, "error waiting for pool instances to be running")
 	repoPool2 = suite.GetRepoPool(suite.repo.ID, repoPool2.ID)
 	suite.DisableRepoPool(suite.repo.ID, repoPool2.ID)
 	suite.DeleteInstance(repoPool2.Instances[0].Name, false, false)
 	err = suite.WaitPoolInstances(repoPool2.ID, commonParams.InstancePendingDelete, params.RunnerPending, 1*time.Minute)
-	assert.NoError(t, err, "error waiting for pool instances to be pending delete")
+	suite.NoError(err, "error waiting for pool instances to be pending delete")
 	suite.DeleteInstance(repoPool2.Instances[0].Name, true, false) // delete instance with forceRemove
 	err = suite.WaitInstanceToBeRemoved(repoPool2.Instances[0].Name, 1*time.Minute)
-	assert.NoError(t, err, "error waiting for instance to be removed")
+	suite.NoError(err, "error waiting for instance to be removed")
 	suite.DeleteRepoPool(suite.repo.ID, repoPool2.ID)
 }
 
@@ -78,7 +77,7 @@ func (suite *GarmSuite) WaitPoolInstances(poolID string, status commonParams.Ins
 	}
 
 	err = suite.dumpPoolInstancesDetails(pool.ID)
-	assert.NoError(t, err, "error dumping pool instances details")
+	suite.NoError(err, "error dumping pool instances details")
 
 	return fmt.Errorf("timeout waiting for pool %s instances to reach status: %s and runner status: %s", poolID, status, runnerStatus)
 }
@@ -111,14 +110,14 @@ func (suite *GarmSuite) DisableRepoPool(repoID, repoPoolID string) {
 	enabled := false
 	poolParams := params.UpdatePoolParams{Enabled: &enabled}
 	_, err := updateRepoPool(suite.cli, suite.authToken, repoID, repoPoolID, poolParams)
-	assert.NoError(t, err, "error disabling repository pool")
+	suite.NoError(err, "error disabling repository pool")
 }
 
 func (suite *GarmSuite) DeleteInstance(name string, forceRemove, bypassGHUnauthorized bool) {
 	t := suite.T()
 	t.Logf("Delete instance %s with force_remove %t", name, forceRemove)
 	err := deleteInstance(suite.cli, suite.authToken, name, forceRemove, bypassGHUnauthorized)
-	assert.NoError(t, err, "error deleting instance", name)
+	suite.NoError(err, "error deleting instance", name)
 	t.Logf("Instance deletion initiated for instance %s", name)
 }
 

@@ -3,7 +3,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"os"
 	"testing"
@@ -13,7 +12,6 @@ import (
 	"github.com/cloudbase/garm/params"
 	"github.com/go-openapi/runtime"
 	openapiRuntimeClient "github.com/go-openapi/runtime/client"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -44,14 +42,10 @@ func (suite *GarmSuite) SetupSuite() {
 	adminFullName := "GARM Admin"
 	adminEmail := "admin@example.com"
 	garmURL, err := url.Parse(baseURL)
-	if err != nil {
-		t.Error("Failed to get GARM_BASE_URL", err)
-	}
+	suite.NoError(err, "error parsing GARM_BASE_URL")
 
 	apiPath, err := url.JoinPath(garmURL.Path, client.DefaultBasePath)
-	if err != nil {
-		t.Error("Failed to join path", err)
-	}
+	suite.NoError(err, "error joining path")
 
 	transportCfg := client.DefaultTransportConfig().
 		WithHost(garmURL.Host).
@@ -67,9 +61,7 @@ func (suite *GarmSuite) SetupSuite() {
 		Email:    adminEmail,
 	}
 	_, err = firstRun(suite.cli, newUser)
-	if err != nil {
-		t.Error("Error at first run", err)
-	}
+	suite.NoError(err, "error at first run")
 
 	t.Log("Login")
 	loginParams := params.PasswordLoginParams{
@@ -77,9 +69,7 @@ func (suite *GarmSuite) SetupSuite() {
 		Password: adminPassword,
 	}
 	token, err := login(suite.cli, loginParams)
-	if err != nil {
-		slog.Error("Error at login", err)
-	}
+	suite.NoError(err, "error at login")
 	suite.authToken = openapiRuntimeClient.BearerToken(token)
 	t.Log("Log in succesful")
 
@@ -97,10 +87,10 @@ func (suite *GarmSuite) SetupSuite() {
 		WebhookSecret:   repoWebhookSecret,
 	}
 	suite.repo, err = createRepo(suite.cli, suite.authToken, createParams)
-	assert.NoError(t, err, "error creating repository")
-	assert.Equal(t, orgName, suite.repo.Owner, "owner name mismatch")
-	assert.Equal(t, repoName, suite.repo.Name, "repo name mismatch")
-	assert.Equal(t, suite.credentialsName, suite.repo.CredentialsName, "credentials name mismatch")
+	suite.NoError(err, "error creating repository")
+	suite.Equal(orgName, suite.repo.Owner, "owner name mismatch")
+	suite.Equal(repoName, suite.repo.Name, "repo name mismatch")
+	suite.Equal(suite.credentialsName, suite.repo.CredentialsName, "credentials name mismatch")
 }
 
 func (suite *GarmSuite) TearDownSuite() {
@@ -108,22 +98,22 @@ func (suite *GarmSuite) TearDownSuite() {
 	t.Log("Graceful cleanup")
 	// disable all the pools
 	pools, err := listPools(suite.cli, suite.authToken)
-	assert.NoError(t, err, "error listing pools")
+	suite.NoError(err, "error listing pools")
 	enabled := false
 	poolParams := params.UpdatePoolParams{Enabled: &enabled}
 	for _, pool := range pools {
 		_, err := updatePool(suite.cli, suite.authToken, pool.ID, poolParams)
-		assert.NoError(t, err, "error disabling pool")
+		suite.NoError(err, "error disabling pool")
 		t.Logf("Pool %s disabled during stage graceful_cleanup", pool.ID)
 	}
 
 	// delete all the instances
 	for _, pool := range pools {
 		poolInstances, err := listPoolInstances(suite.cli, suite.authToken, pool.ID)
-		assert.NoError(t, err, "error listing pool instances")
+		suite.NoError(err, "error listing pool instances")
 		for _, instance := range poolInstances {
 			err := deleteInstance(suite.cli, suite.authToken, instance.Name, false, false)
-			assert.NoError(t, err, "error deleting instance")
+			suite.NoError(err, "error deleting instance")
 			t.Logf("Instance deletion initiated for instace %s during stage graceful_cleanup", instance.Name)
 		}
 	}
@@ -131,50 +121,33 @@ func (suite *GarmSuite) TearDownSuite() {
 	// wait for all instances to be deleted
 	for _, pool := range pools {
 		err := suite.waitPoolNoInstances(pool.ID, 3*time.Minute)
-		assert.NoError(t, err, "error waiting for pool to have no instances")
+		suite.NoError(err, "error waiting for pool to have no instances")
 
 	}
 
 	// delete all the pools
 	for _, pool := range pools {
 		err := deletePool(suite.cli, suite.authToken, pool.ID)
-		assert.NoError(t, err, "error deleting pool")
+		suite.NoError(err, "error deleting pool")
 		t.Logf("Pool %s deleted during stage graceful_cleanup", pool.ID)
 	}
 
 	// delete all the repositories
 	repos, err := listRepos(suite.cli, suite.authToken)
-	assert.NoError(t, err, "error listing repositories")
+	suite.NoError(err, "error listing repositories")
 	for _, repo := range repos {
 		err := deleteRepo(suite.cli, suite.authToken, repo.ID)
-		assert.NoError(t, err, "error deleting repository")
+		suite.NoError(err, "error deleting repository")
 		t.Logf("Repo %s deleted during stage graceful_cleanup", repo.ID)
 	}
 
 	// delete all the organizations
 	orgs, err := listOrgs(suite.cli, suite.authToken)
-	assert.NoError(t, err, "error listing organizations")
+	suite.NoError(err, "error listing organizations")
 	for _, org := range orgs {
 		err := deleteOrg(suite.cli, suite.authToken, org.ID)
-		assert.NoError(t, err, "error deleting organization")
+		suite.NoError(err, "error deleting organization")
 		t.Logf("Org %s deleted during stage graceful_cleanup", org.ID)
-	}
-
-	controllerID, ctrlIDFound := os.LookupEnv("GARM_CONTROLLER_ID")
-	if ctrlIDFound {
-		_ = suite.GhOrgRunnersCleanup(suite.ghToken, orgName, controllerID)
-		_ = suite.GhRepoRunnersCleanup(suite.ghToken, orgName, repoName, controllerID)
-	} else {
-		slog.Warn("Env variable GARM_CONTROLLER_ID is not set, skipping GitHub runners cleanup")
-	}
-
-	baseURL, baseURLFound := os.LookupEnv("GARM_BASE_URL")
-	if ctrlIDFound && baseURLFound {
-		webhookURL := fmt.Sprintf("%s/webhooks/%s", baseURL, controllerID)
-		_ = suite.GhOrgWebhookCleanup(suite.ghToken, webhookURL, orgName)
-		_ = suite.GhRepoWebhookCleanup(suite.ghToken, webhookURL, orgName, repoName)
-	} else {
-		slog.Warn("Env variables GARM_CONTROLLER_ID & GARM_BASE_URL are not set, skipping webhooks cleanup")
 	}
 }
 
@@ -191,7 +164,7 @@ func (suite *GarmSuite) waitPoolNoInstances(id string, timeout time.Duration) er
 	t.Logf("Wait until pool with id %s has no instances", id)
 	for timeWaited < timeout {
 		pool, err = getPool(suite.cli, suite.authToken, id)
-		assert.NoError(t, err, "error getting pool")
+		suite.NoError(err, "error getting pool")
 		t.Logf("Current pool has %d instances", len(pool.Instances))
 		if len(pool.Instances) == 0 {
 			return nil
@@ -201,7 +174,7 @@ func (suite *GarmSuite) waitPoolNoInstances(id string, timeout time.Duration) er
 	}
 
 	err = suite.dumpPoolInstancesDetails(pool.ID)
-	assert.NoError(t, err, "error dumping pool instances details")
+	suite.NoError(err, "error dumping pool instances details")
 
 	return fmt.Errorf("failed to wait for pool %s to have no instances", pool.ID)
 }
@@ -231,77 +204,6 @@ func (suite *GarmSuite) GhOrgRunnersCleanup(ghToken, orgName, controllerID strin
 				break
 			}
 		}
-	}
-
-	return nil
-}
-
-func (suite *GarmSuite) GhRepoRunnersCleanup(ghToken, orgName, repoName, controllerID string) error {
-	t := suite.T()
-	t.Logf("Cleanup Github runners for controller %s, org %s, repo %s", controllerID, orgName, repoName)
-
-	client := getGithubClient(ghToken)
-	ghRepoRunners, _, err := client.Actions.ListRunners(context.Background(), orgName, repoName, nil)
-	if err != nil {
-		return err
-	}
-
-	// Remove repository runners
-	controllerLabel := fmt.Sprintf("runner-controller-id:%s", controllerID)
-	for _, repoRunner := range ghRepoRunners.Runners {
-		for _, label := range repoRunner.Labels {
-			if label.GetName() == controllerLabel {
-				if _, err := client.Actions.RemoveRunner(context.Background(), orgName, repoName, repoRunner.GetID()); err != nil {
-					// We don't fail if we can't remove a single runner. This
-					// is a best effort to try and remove all the orphan runners.
-					t.Logf("Failed to remove repository runner %s: %v", repoRunner.GetName(), err)
-					break
-				}
-				t.Logf("Removed repository runner %s", repoRunner.GetName())
-				break
-			}
-		}
-	}
-
-	return nil
-}
-
-func (suite *GarmSuite) GhOrgWebhookCleanup(ghToken, webhookURL, orgName string) error {
-	t := suite.T()
-	t.Logf("Cleanup Github webhook with webhook_url %s and org %s", webhookURL, orgName)
-	hook, err := getGhOrgWebhook(webhookURL, ghToken, orgName)
-	if err != nil {
-		return err
-	}
-
-	// Remove organization webhook
-	if hook != nil {
-		client := getGithubClient(ghToken)
-		if _, err := client.Organizations.DeleteHook(context.Background(), orgName, hook.GetID()); err != nil {
-			return err
-		}
-		t.Logf("Github webhook removed with webhook_url %s and org_name %s", webhookURL, orgName)
-	}
-
-	return nil
-}
-
-func (suite *GarmSuite) GhRepoWebhookCleanup(ghToken, webhookURL, orgName, repoName string) error {
-	t := suite.T()
-	t.Logf("Cleanup Github webhook with webhook_url %s, org_name %s and repo_name %s", webhookURL, orgName, repoName)
-
-	hook, err := getGhRepoWebhook(webhookURL, ghToken, orgName, repoName)
-	if err != nil {
-		return err
-	}
-
-	// Remove repository webhook
-	if hook != nil {
-		client := getGithubClient(ghToken)
-		if _, err := client.Repositories.DeleteHook(context.Background(), orgName, repoName, hook.GetID()); err != nil {
-			return err
-		}
-		t.Logf("Delete Github webhook with webhook_url %s, org_name %s and repo_name %s", webhookURL, orgName, repoName)
 	}
 
 	return nil

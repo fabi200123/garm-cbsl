@@ -5,32 +5,30 @@ import (
 	"os"
 
 	"github.com/cloudbase/garm/params"
-	"github.com/stretchr/testify/assert"
 )
 
 func (suite *GarmSuite) TestGetControllerInfo() {
-	t := suite.T()
 	controllerInfo := suite.GetControllerInfo()
-	assert.NotEmpty(t, controllerInfo.ControllerID, "controller ID is empty")
+	suite.NotEmpty(controllerInfo.ControllerID, "controller ID is empty")
 }
 
 func (suite *GarmSuite) GetMetricsToken() {
 	t := suite.T()
 	t.Log("Get metrics token")
 	metricsToken, err := getMetricsToken(suite.cli, suite.authToken)
-	assert.NoError(t, err, "error getting metrics token")
-	assert.NotEmpty(t, metricsToken, "metrics token is empty")
+	suite.NoError(err, "error getting metrics token")
+	suite.NotEmpty(metricsToken, "metrics token is empty")
 }
 
 func (suite *GarmSuite) GetControllerInfo() *params.ControllerInfo {
 	t := suite.T()
 	t.Log("Get controller info")
 	controllerInfo, err := getControllerInfo(suite.cli, suite.authToken)
-	assert.NoError(t, err, "error getting controller info")
+	suite.NoError(err, "error getting controller info")
 	err = suite.appendCtrlInfoToGitHubEnv(&controllerInfo)
-	assert.NoError(t, err, "error appending controller info to GitHub env")
+	suite.NoError(err, "error appending controller info to GitHub env")
 	err = printJSONResponse(controllerInfo)
-	assert.NoError(t, err, "error printing controller info")
+	suite.NoError(err, "error printing controller info")
 	return &controllerInfo
 }
 
@@ -38,16 +36,16 @@ func (suite *GarmSuite) TestListCredentials() {
 	t := suite.T()
 	t.Log("List credentials")
 	credentials, err := listCredentials(suite.cli, suite.authToken)
-	assert.NoError(t, err, "error listing credentials")
-	assert.NotEmpty(t, credentials, "credentials list is empty")
+	suite.NoError(err, "error listing credentials")
+	suite.NotEmpty(credentials, "credentials list is empty")
 }
 
 func (suite *GarmSuite) TestListProviders() {
 	t := suite.T()
 	t.Log("List providers")
 	providers, err := listProviders(suite.cli, suite.authToken)
-	assert.NoError(t, err, "error listing providers")
-	assert.NotEmpty(t, providers, "providers list is empty")
+	suite.NoError(err, "error listing providers")
+	suite.NotEmpty(providers, "providers list is empty")
 }
 
 func (suite *GarmSuite) appendCtrlInfoToGitHubEnv(controllerInfo *params.ControllerInfo) error {

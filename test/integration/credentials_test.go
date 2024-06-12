@@ -2,7 +2,6 @@ package integration
 
 import (
 	"github.com/cloudbase/garm/params"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -14,7 +13,7 @@ func (suite *GarmSuite) TestGithubCredentialsErrorOnDuplicateCredentialsName() {
 	t := suite.T()
 	t.Log("Testing error on duplicate credentials name")
 	creds, err := suite.createDummyCredentials(dummyCredentialsName, defaultEndpointName)
-	assert.NoError(t, err)
+	suite.NoError(err)
 	defer suite.DeleteGithubCredential(int64(creds.ID))
 
 	createCredsParams := params.CreateGithubCredentialsParams{
@@ -27,14 +26,14 @@ func (suite *GarmSuite) TestGithubCredentialsErrorOnDuplicateCredentialsName() {
 		},
 	}
 	_, err = createGithubCredentials(suite.cli, suite.authToken, createCredsParams)
-	assert.Error(t, err, "expected error when creating credentials with duplicate name")
+	suite.Error(err, "expected error when creating credentials with duplicate name")
 }
 
 func (suite *GarmSuite) TestGithubCredentialsFailsToDeleteWhenInUse() {
 	t := suite.T()
 	t.Log("Testing error when deleting credentials in use")
 	creds, err := suite.createDummyCredentials(dummyCredentialsName, defaultEndpointName)
-	assert.NoError(t, err)
+	suite.NoError(err)
 
 	orgName := "dummy-owner"
 	repoName := "dummy-repo"
@@ -47,14 +46,14 @@ func (suite *GarmSuite) TestGithubCredentialsFailsToDeleteWhenInUse() {
 
 	t.Logf("Create repository with owner_name: %s, repo_name: %s", orgName, repoName)
 	repo, err := createRepo(suite.cli, suite.authToken, createParams)
-	assert.NoError(t, err)
+	suite.NoError(err)
 	defer func() {
 		deleteRepo(suite.cli, suite.authToken, repo.ID)
 		deleteGithubCredentials(suite.cli, suite.authToken, int64(creds.ID))
 	}()
 
 	err = deleteGithubCredentials(suite.cli, suite.authToken, int64(creds.ID))
-	assert.Error(t, err, "expected error when deleting credentials in use")
+	suite.Error(err, "expected error when deleting credentials in use")
 }
 
 func (suite *GarmSuite) TestGithubCredentialsFailsOnInvalidAuthType() {
@@ -70,7 +69,7 @@ func (suite *GarmSuite) TestGithubCredentialsFailsOnInvalidAuthType() {
 		},
 	}
 	_, err := createGithubCredentials(suite.cli, suite.authToken, createCredsParams)
-	assert.Error(t, err, "expected error when creating credentials with invalid auth type")
+	suite.Error(err, "expected error when creating credentials with invalid auth type")
 	expectAPIStatusCode(err, 400)
 }
 
@@ -78,7 +77,7 @@ func (suite *GarmSuite) TestGithubCredentialsFailsWhenAuthTypeParamsAreIncorrect
 	t := suite.T()
 	t.Log("Testing error when auth type params are incorrect")
 	privateKeyBytes, err := getTestFileContents("certs/srv-key.pem")
-	assert.NoError(t, err)
+	suite.NoError(err)
 	createCredsParams := params.CreateGithubCredentialsParams{
 		Name:        dummyCredentialsName,
 		Endpoint:    defaultEndpointName,
@@ -91,7 +90,7 @@ func (suite *GarmSuite) TestGithubCredentialsFailsWhenAuthTypeParamsAreIncorrect
 		},
 	}
 	_, err = createGithubCredentials(suite.cli, suite.authToken, createCredsParams)
-	assert.Error(t, err, "expected error when creating credentials with invalid auth type params")
+	suite.Error(err, "expected error when creating credentials with invalid auth type params")
 
 	expectAPIStatusCode(err, 400)
 }
@@ -106,7 +105,7 @@ func (suite *GarmSuite) TestGithubCredentialsFailsWhenAuthTypeParamsAreMissing()
 		AuthType:    params.GithubAuthTypeApp,
 	}
 	_, err := createGithubCredentials(suite.cli, suite.authToken, createCredsParams)
-	assert.Error(t, err, "expected error when creating credentials with missing auth type params")
+	suite.Error(err, "expected error when creating credentials with missing auth type params")
 	expectAPIStatusCode(err, 400)
 }
 
@@ -114,11 +113,11 @@ func (suite *GarmSuite) TestGithubCredentialsUpdateFailsWhenBothPATAndAppAreSupp
 	t := suite.T()
 	t.Log("Testing error when both PAT and App are supplied")
 	creds, err := suite.createDummyCredentials(dummyCredentialsName, defaultEndpointName)
-	assert.NoError(t, err)
+	suite.NoError(err)
 	defer suite.DeleteGithubCredential(int64(creds.ID))
 
 	privateKeyBytes, err := getTestFileContents("certs/srv-key.pem")
-	assert.NoError(t, err)
+	suite.NoError(err)
 	updateCredsParams := params.UpdateGithubCredentialsParams{
 		PAT: &params.GithubPAT{
 			OAuth2Token: "dummy",
@@ -130,7 +129,7 @@ func (suite *GarmSuite) TestGithubCredentialsUpdateFailsWhenBothPATAndAppAreSupp
 		},
 	}
 	_, err = updateGithubCredentials(suite.cli, suite.authToken, int64(creds.ID), updateCredsParams)
-	assert.Error(t, err, "expected error when updating credentials with both PAT and App")
+	suite.Error(err, "expected error when updating credentials with both PAT and App")
 	expectAPIStatusCode(err, 400)
 }
 
@@ -149,7 +148,7 @@ func (suite *GarmSuite) TestGithubCredentialsFailWhenAppKeyIsInvalid() {
 		},
 	}
 	_, err := createGithubCredentials(suite.cli, suite.authToken, createCredsParams)
-	assert.Error(t, err, "expected error when creating credentials with invalid app key")
+	suite.Error(err, "expected error when creating credentials with invalid app key")
 	expectAPIStatusCode(err, 400)
 }
 
@@ -166,7 +165,7 @@ func (suite *GarmSuite) TestGithubCredentialsFailWhenEndpointDoesntExist() {
 		},
 	}
 	_, err := createGithubCredentials(suite.cli, suite.authToken, createCredsParams)
-	assert.Error(t, err, "expected error when creating credentials with invalid endpoint")
+	suite.Error(err, "expected error when creating credentials with invalid endpoint")
 	expectAPIStatusCode(err, 404)
 }
 
@@ -174,7 +173,7 @@ func (suite *GarmSuite) TestGithubCredentialsFailsOnDuplicateName() {
 	t := suite.T()
 	t.Log("Testing error on duplicate credentials name")
 	creds, err := suite.createDummyCredentials(dummyCredentialsName, defaultEndpointName)
-	assert.NoError(t, err)
+	suite.NoError(err)
 	defer suite.DeleteGithubCredential(int64(creds.ID))
 
 	createCredsParams := params.CreateGithubCredentialsParams{
@@ -187,7 +186,7 @@ func (suite *GarmSuite) TestGithubCredentialsFailsOnDuplicateName() {
 		},
 	}
 	_, err = createGithubCredentials(suite.cli, suite.authToken, createCredsParams)
-	assert.Error(t, err, "expected error when creating credentials with duplicate name")
+	suite.Error(err, "expected error when creating credentials with duplicate name")
 	expectAPIStatusCode(err, 409)
 }
 

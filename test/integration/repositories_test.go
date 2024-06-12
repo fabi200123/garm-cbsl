@@ -8,7 +8,6 @@ import (
 	commonParams "github.com/cloudbase/garm-provider-common/params"
 	"github.com/cloudbase/garm/params"
 	"github.com/google/go-github/v57/github"
-	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
 
@@ -38,8 +37,8 @@ func (suite *GarmSuite) TestRepositories() {
 		CredentialsName: fmt.Sprintf("%s-clone", suite.credentialsName),
 	}
 	repo, err := updateRepo(suite.cli, suite.authToken, suite.repo.ID, updateParams)
-	assert.NoError(t, err, "error updating repository")
-	assert.Equal(t, fmt.Sprintf("%s-clone", suite.credentialsName), repo.CredentialsName, "credentials name mismatch")
+	suite.NoError(err, "error updating repository")
+	suite.Equal(fmt.Sprintf("%s-clone", suite.credentialsName), repo.CredentialsName, "credentials name mismatch")
 	suite.repo = repo
 
 	hookRepoInfo := suite.InstallRepoWebhook(suite.repo.ID)
@@ -63,17 +62,17 @@ func (suite *GarmSuite) TestRepositories() {
 	}
 
 	repoPool := suite.CreateRepoPool(suite.repo.ID, repoPoolParams)
-	assert.Equal(t, repoPool.MaxRunners, repoPoolParams.MaxRunners, "max runners mismatch")
-	assert.Equal(t, repoPool.MinIdleRunners, repoPoolParams.MinIdleRunners, "min idle runners mismatch")
+	suite.Equal(repoPool.MaxRunners, repoPoolParams.MaxRunners, "max runners mismatch")
+	suite.Equal(repoPool.MinIdleRunners, repoPoolParams.MinIdleRunners, "min idle runners mismatch")
 
 	repoPoolGet := suite.GetRepoPool(suite.repo.ID, repoPool.ID)
-	assert.Equal(t, *repoPool, *repoPoolGet, "pool get mismatch")
+	suite.Equal(*repoPool, *repoPoolGet, "pool get mismatch")
 
 	suite.DeleteRepoPool(suite.repo.ID, repoPool.ID)
 
 	repoPool = suite.CreateRepoPool(suite.repo.ID, repoPoolParams)
 	updatedRepoPool := suite.UpdateRepoPool(suite.repo.ID, repoPool.ID, repoPoolParams.MaxRunners, 1)
-	assert.NotEqual(t, updatedRepoPool.MinIdleRunners, repoPool.MinIdleRunners, "min idle runners mismatch")
+	suite.NotEqual(updatedRepoPool.MinIdleRunners, repoPool.MinIdleRunners, "min idle runners mismatch")
 
 	suite.WaitRepoRunningIdleInstances(suite.repo.ID, 6*time.Minute)
 }
@@ -85,18 +84,17 @@ func (suite *GarmSuite) InstallRepoWebhook(id string) *params.HookInfo {
 		WebhookEndpointType: params.WebhookEndpointDirect,
 	}
 	_, err := installRepoWebhook(suite.cli, suite.authToken, id, webhookParams)
-	assert.NoError(t, err, "error installing repository webhook")
+	suite.NoError(err, "error installing repository webhook")
 
 	webhookInfo, err := getRepoWebhook(suite.cli, suite.authToken, id)
-	assert.NoError(t, err, "error getting repository webhook")
+	suite.NoError(err, "error getting repository webhook")
 	return webhookInfo
 }
 
 func (suite *GarmSuite) ValidateRepoWebhookInstalled(ghToken, url, orgName, repoName string) {
-	t := suite.T()
 	hook, err := getGhRepoWebhook(url, ghToken, orgName, repoName)
-	assert.NoError(t, err, "error getting github webhook")
-	assert.NotNil(t, hook, "github webhook with url %s, for repo %s/%s was not properly installed", url, orgName, repoName)
+	suite.NoError(err, "error getting github webhook")
+	suite.NotNil(hook, "github webhook with url %s, for repo %s/%s was not properly installed", url, orgName, repoName)
 }
 
 func getGhRepoWebhook(url, ghToken, orgName, repoName string) (*github.Hook, error) {
@@ -126,21 +124,20 @@ func (suite *GarmSuite) UninstallRepoWebhook(id string) {
 	t := suite.T()
 	t.Logf("Uninstall repo webhook with repo_id %s", id)
 	err := uninstallRepoWebhook(suite.cli, suite.authToken, id)
-	assert.NoError(t, err, "error uninstalling repository webhook")
+	suite.NoError(err, "error uninstalling repository webhook")
 }
 
 func (suite *GarmSuite) ValidateRepoWebhookUninstalled(ghToken, url, orgName, repoName string) {
-	t := suite.T()
 	hook, err := getGhRepoWebhook(url, ghToken, orgName, repoName)
-	assert.NoError(t, err, "error getting github webhook")
-	assert.Nil(t, hook, "github webhook with url %s, for repo %s/%s was not properly uninstalled", url, orgName, repoName)
+	suite.NoError(err, "error getting github webhook")
+	suite.Nil(hook, "github webhook with url %s, for repo %s/%s was not properly uninstalled", url, orgName, repoName)
 }
 
 func (suite *GarmSuite) CreateRepoPool(repoID string, poolParams params.CreatePoolParams) *params.Pool {
 	t := suite.T()
 	t.Logf("Create repo pool with repo_id %s and pool_params %+v", repoID, poolParams)
 	pool, err := createRepoPool(suite.cli, suite.authToken, repoID, poolParams)
-	assert.NoError(t, err, "error creating repository pool")
+	suite.NoError(err, "error creating repository pool")
 	return pool
 }
 
@@ -148,7 +145,7 @@ func (suite *GarmSuite) GetRepoPool(repoID, repoPoolID string) *params.Pool {
 	t := suite.T()
 	t.Logf("Get repo pool repo_id %s and pool_id %s", repoID, repoPoolID)
 	pool, err := getRepoPool(suite.cli, suite.authToken, repoID, repoPoolID)
-	assert.NoError(t, err, "error getting repository pool")
+	suite.NoError(err, "error getting repository pool")
 	return pool
 }
 
@@ -156,7 +153,7 @@ func (suite *GarmSuite) DeleteRepoPool(repoID, repoPoolID string) {
 	t := suite.T()
 	t.Logf("Delete repo pool with repo_id %s and pool_id %s", repoID, repoPoolID)
 	err := deleteRepoPool(suite.cli, suite.authToken, repoID, repoPoolID)
-	assert.NoError(t, err, "error deleting repository pool")
+	suite.NoError(err, "error deleting repository pool")
 }
 
 func (suite *GarmSuite) UpdateRepoPool(repoID, repoPoolID string, maxRunners, minIdleRunners uint) *params.Pool {
@@ -167,14 +164,14 @@ func (suite *GarmSuite) UpdateRepoPool(repoID, repoPoolID string, maxRunners, mi
 		MaxRunners:     &maxRunners,
 	}
 	pool, err := updateRepoPool(suite.cli, suite.authToken, repoID, repoPoolID, poolParams)
-	assert.NoError(t, err, "error updating repository pool")
+	suite.NoError(err, "error updating repository pool")
 	return pool
 }
 
 func (suite *GarmSuite) WaitRepoRunningIdleInstances(repoID string, timeout time.Duration) {
 	t := suite.T()
 	repoPools, err := listRepoPools(suite.cli, suite.authToken, repoID)
-	assert.NoError(t, err, "error listing repo pools")
+	suite.NoError(err, "error listing repo pools")
 	for _, pool := range repoPools {
 		err := suite.WaitPoolInstances(pool.ID, commonParams.InstanceRunning, params.RunnerIdle, timeout)
 		if err != nil {
@@ -189,19 +186,19 @@ func (suite *GarmSuite) dumpRepoInstancesDetails(repoID string) {
 	// print repo details
 	t.Logf("Dumping repo details for repo %s", repoID)
 	repo, err := getRepo(suite.cli, suite.authToken, repoID)
-	assert.NoError(t, err, "error getting repo")
+	suite.NoError(err, "error getting repo")
 	err = printJSONResponse(repo)
-	assert.NoError(t, err, "error printing repo")
+	suite.NoError(err, "error printing repo")
 
 	// print repo instances details
 	t.Logf("Dumping repo instances details for repo %s", repoID)
 	instances, err := listRepoInstances(suite.cli, suite.authToken, repoID)
-	assert.NoError(t, err, "error listing repo instances")
+	suite.NoError(err, "error listing repo instances")
 	for _, instance := range instances {
 		instance, err := getInstance(suite.cli, suite.authToken, instance.Name)
-		assert.NoError(t, err, "error getting instance")
+		suite.NoError(err, "error getting instance")
 		t.Logf("Instance info for instance %s", instance.Name)
 		err = printJSONResponse(instance)
-		assert.NoError(t, err, "error printing instance")
+		suite.NoError(err, "error printing instance")
 	}
 }

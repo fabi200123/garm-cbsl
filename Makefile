@@ -79,10 +79,11 @@ integration: build ## Run integration tests
 			source $$GITHUB_ENV
 		fi
 		./test/integration/scripts/taredown_garm.sh
+		$(GO) run ./test/integration/gh_cleanup/main.go
 	}
 	trap cleanup EXIT
 	@./test/integration/scripts/setup-garm.sh
-	@$(GO) test --v ./test/integration/.
+	@$(GO) test -v ./test/integration/. -timeout=30m
 
 ##@ Development
 

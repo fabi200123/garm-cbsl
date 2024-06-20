@@ -77,6 +77,10 @@ func GetEnvironment() (Environment, error) {
 		if err := json.Unmarshal(data.Bytes(), &bootstrapParams); err != nil {
 			return Environment{}, fmt.Errorf("failed to decode instance params: %w", err)
 		}
+		if bootstrapParams.ExtraSpecs == nil {
+			// Initialize ExtraSpecs as an empty JSON object
+			bootstrapParams.ExtraSpecs = json.RawMessage([]byte("{}"))
+		}
 		env.BootstrapParams = bootstrapParams
 	}
 
@@ -193,6 +197,18 @@ func Run(ctx context.Context, provider ExternalProvider, env Environment) (strin
 		if err := provider.Stop(ctx, env.InstanceID, true); err != nil {
 			return "", fmt.Errorf("failed to stop instance: %w", err)
 		}
+	case GetVersionInfoCommand:
+		version, err := provider.GetVersionInfo(ctx)
+		//TODO: Modify to not be an error, but use version v0.1.0 instead
+		if err != nil {
+			return "", fmt.Errorf("failed to get version info: %w", err)
+		}
+
+		asJs, err := json.Marshal(version)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal response: %w", err)
+		}
+		ret = string(asJs)
 	default:
 		return "", fmt.Errorf("invalid command: %s", env.Command)
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v57/github"
 
 	runnerErrors "github.com/cloudbase/garm-provider-common/errors"
-	commonParams "github.com/cloudbase/garm-provider-common/params"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 	"github.com/cloudbase/garm/params"
 )
 

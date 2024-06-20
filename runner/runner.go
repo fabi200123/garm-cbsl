@@ -35,8 +35,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	runnerErrors "github.com/cloudbase/garm-provider-common/errors"
-	commonParams "github.com/cloudbase/garm-provider-common/params"
-	"github.com/cloudbase/garm-provider-common/util"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
+	util "github.com/cloudbase/garm-provider-common/util/v0.1.1"
 	"github.com/cloudbase/garm/auth"
 	"github.com/cloudbase/garm/config"
 	dbCommon "github.com/cloudbase/garm/database/common"

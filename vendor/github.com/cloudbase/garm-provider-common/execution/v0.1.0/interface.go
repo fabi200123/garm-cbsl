@@ -1,4 +1,4 @@
-// Copyright 2022 Cloudbase Solutions SRL
+// Copyright 2023 Cloudbase Solutions SRL
 //
 //    Licensed under the Apache License, Version 2.0 (the "License"); you may
 //    not use this file except in compliance with the License. You may obtain
@@ -12,37 +12,30 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package common
+package execution
 
 import (
 	"context"
 
-	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
-	"github.com/cloudbase/garm/params"
+	params "github.com/cloudbase/garm-provider-common/params/v0.1.0"
 )
 
-//go:generate mockery --all
-type Provider interface {
+// ExternalProvider defines an interface that external providers need to implement.
+// This is very similar to the common.Provider interface, and was redefined here to
+// decouple it, in case it may diverge from native providers.
+type ExternalProvider interface {
 	// CreateInstance creates a new compute instance in the provider.
-	CreateInstance(ctx context.Context, bootstrapParams commonParams.BootstrapInstance) (commonParams.ProviderInstance, error)
+	CreateInstance(ctx context.Context, bootstrapParams params.BootstrapInstance) (params.ProviderInstance, error)
 	// Delete instance will delete the instance in a provider.
 	DeleteInstance(ctx context.Context, instance string) error
 	// GetInstance will return details about one instance.
-	GetInstance(ctx context.Context, instance string) (commonParams.ProviderInstance, error)
+	GetInstance(ctx context.Context, instance string) (params.ProviderInstance, error)
 	// ListInstances will list all instances for a provider.
-	ListInstances(ctx context.Context, poolID string) ([]commonParams.ProviderInstance, error)
+	ListInstances(ctx context.Context, poolID string) ([]params.ProviderInstance, error)
 	// RemoveAllInstances will remove all instances created by this provider.
 	RemoveAllInstances(ctx context.Context) error
 	// Stop shuts down the instance.
-	Stop(ctx context.Context, instance string) error
+	Stop(ctx context.Context, instance string, force bool) error
 	// Start boots up an instance.
 	Start(ctx context.Context, instance string) error
-	// GetVersion returns the version of the provider.
-	GetVersion(ctx context.Context) (params.ProviderVersionInfo, error)
-	// DisableJITConfig tells us if the provider explicitly disables JIT configuration and
-	// forces runner registration tokens to be used. This may happen if a provider has not yet
-	// been updated to support JIT configuration.
-	DisableJITConfig() bool
-
-	AsParams() params.Provider
 }

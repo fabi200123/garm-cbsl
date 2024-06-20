@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	garm_provider_commonparams "github.com/cloudbase/garm-provider-common/params"
+	garm_provider_commonparams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 	mock "github.com/stretchr/testify/mock"
 
 	params "github.com/cloudbase/garm/params"

@@ -336,9 +336,11 @@ func (e *external) DisableJITConfig() bool {
 
 // GetVersionInfo returns the version information for the provider.
 func (e *external) GetVersionInfo(ctx context.Context) (commonParams.ProviderVersionInfo, error) {
+	testVersion := "v0.1.1"
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.GetVersionInfoCommand),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
+		fmt.Sprintf("GARM_INTERFACE_VERSION=%s", testVersion),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 

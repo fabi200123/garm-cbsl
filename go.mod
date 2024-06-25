@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/bradleyfalzon/ghinstallation/v2 v2.10.0
-	github.com/cloudbase/garm-provider-common v0.1.0
+	github.com/cloudbase/garm-provider-common v0.1.1
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/go-openapi/errors v0.22.0
 	github.com/go-openapi/runtime v0.28.0

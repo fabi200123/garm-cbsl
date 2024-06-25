@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 
-	commonParams "github.com/cloudbase/garm-provider-common/params"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 	"github.com/cloudbase/garm/database/common"
 	"github.com/cloudbase/garm/database/watcher"
 	garmTesting "github.com/cloudbase/garm/internal/testing"

@@ -38,7 +38,7 @@ type Provider interface {
 	// Start boots up an instance.
 	Start(ctx context.Context, instance string) error
 	// GetVersion returns the version of the provider.
-	GetVersion(ctx context.Context) (params.ProviderVersionInfo, error)
+	GetVersionInfo(ctx context.Context) (commonParams.ProviderVersionInfo, error)
 	// DisableJITConfig tells us if the provider explicitly disables JIT configuration and
 	// forces runner registration tokens to be used. This may happen if a provider has not yet
 	// been updated to support JIT configuration.

@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 
 	gErrors "github.com/cloudbase/garm-provider-common/errors"
-	"github.com/cloudbase/garm-provider-common/util"
+	util "github.com/cloudbase/garm-provider-common/util/v0.1.1"
 	"github.com/cloudbase/garm/apiserver/params"
 	"github.com/cloudbase/garm/auth"
 	"github.com/cloudbase/garm/metrics"

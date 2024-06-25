@@ -33,7 +33,7 @@ import (
 	"github.com/pkg/errors"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/cloudbase/garm-provider-common/util"
+	util "github.com/cloudbase/garm-provider-common/util/v0.1.1"
 	"github.com/cloudbase/garm/apiserver/controllers"
 	"github.com/cloudbase/garm/apiserver/routers"
 	"github.com/cloudbase/garm/auth"

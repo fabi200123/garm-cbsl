@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 
 	runnerErrors "github.com/cloudbase/garm-provider-common/errors"
-	commonParams "github.com/cloudbase/garm-provider-common/params"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 	"github.com/cloudbase/garm/config"
 	dbCommon "github.com/cloudbase/garm/database/common"
 	"github.com/cloudbase/garm/params"

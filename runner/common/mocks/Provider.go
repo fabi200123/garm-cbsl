@@ -210,6 +210,31 @@ func (_m *Provider) Stop(ctx context.Context, instance string) error {
 	return r0
 }
 
+// GetVersionInfo provides a mock function with given fields:
+func (_m *Provider) GetVersionInfo(ctx context.Context) (garm_provider_commonparams.ProviderVersionInfo, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetVersionInfo")
+	}
+
+	var r0 garm_provider_commonparams.ProviderVersionInfo
+	var r1 error
+	if rf, ok := ret.Get(0).(func() garm_provider_commonparams.ProviderVersionInfo); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(garm_provider_commonparams.ProviderVersionInfo)
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NewProvider creates a new instance of Provider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewProvider(t interface {

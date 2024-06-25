@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/spf13/cobra"
 
-	"github.com/cloudbase/garm-provider-common/util"
+	util "github.com/cloudbase/garm-provider-common/util/v0.1.1"
 	apiParams "github.com/cloudbase/garm/apiserver/params"
 )
 

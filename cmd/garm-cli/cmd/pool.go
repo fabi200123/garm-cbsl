@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	commonParams "github.com/cloudbase/garm-provider-common/params"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 	apiClientEnterprises "github.com/cloudbase/garm/client/enterprises"
 	apiClientOrgs "github.com/cloudbase/garm/client/organizations"
 	apiClientPools "github.com/cloudbase/garm/client/pools"

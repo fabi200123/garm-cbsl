@@ -24,8 +24,8 @@ import (
 	"gorm.io/gorm"
 
 	runnerErrors "github.com/cloudbase/garm-provider-common/errors"
-	commonParams "github.com/cloudbase/garm-provider-common/params"
-	"github.com/cloudbase/garm-provider-common/util"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
+	util "github.com/cloudbase/garm-provider-common/util/v0.1.1"
 	dbCommon "github.com/cloudbase/garm/database/common"
 	"github.com/cloudbase/garm/params"
 )

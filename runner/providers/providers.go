@@ -17,13 +17,14 @@ package providers
 import (
 	"context"
 	"log/slog"
+	"os"
 
 	"github.com/pkg/errors"
 
 	"github.com/cloudbase/garm/config"
 	"github.com/cloudbase/garm/params"
 	"github.com/cloudbase/garm/runner/common"
-	"github.com/cloudbase/garm/runner/providers/external"
+	external "github.com/cloudbase/garm/runner/providers/external"
 )
 
 // LoadProvidersFromConfig loads all providers from the config and populates
@@ -37,11 +38,21 @@ func LoadProvidersFromConfig(ctx context.Context, cfg config.Config, controllerI
 		switch providerCfg.ProviderType {
 		case params.ExternalProvider:
 			conf := providerCfg
-			provider, err := external.NewProvider(ctx, &conf, controllerID)
-			if err != nil {
-				return nil, errors.Wrap(err, "creating provider")
+			if os.Getenv("GARM_PROVIDER_VERSION") == "v0.1.1" {
+				provider, err := external.NewProvider(ctx, &conf, controllerID)
+				if err != nil {
+					return nil, errors.Wrap(err, "creating provider")
+				}
+				providers[providerCfg.Name] = provider
+			} else {
+				// TODO: Find a better way to set this
+				// provider, err := external.NewProvider(ctx, &conf, controllerID)
+				// if err != nil {
+				// 	return nil, errors.Wrap(err, "creating provider")
+				// }
+				// providers[providerCfg.Name] = provider
+				return nil, errors.Errorf("provider version is v0.1.0, please update to v0.1.1")
 			}
-			providers[providerCfg.Name] = provider
 		default:
 			return nil, errors.Errorf("unknown provider type %s", providerCfg.ProviderType)
 		}

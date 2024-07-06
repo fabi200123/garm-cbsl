@@ -20,7 +20,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 
-	"github.com/cloudbase/garm-provider-common/util"
+	util "github.com/cloudbase/garm-provider-common/util/v0.1.1"
 	apiClientRepos "github.com/cloudbase/garm/client/repositories"
 	"github.com/cloudbase/garm/params"
 )

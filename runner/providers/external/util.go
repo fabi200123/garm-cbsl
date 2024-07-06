@@ -1,7 +1,7 @@
-package external
+package external1
 
 import (
-	commonParams "github.com/cloudbase/garm-provider-common/params"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 )
 
 // IsProviderValidStatus checks if the given status is valid for the provider.

@@ -30,7 +30,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 
-	commonParams "github.com/cloudbase/garm-provider-common/params"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 	"github.com/cloudbase/garm/util/appdefaults"
 )
 

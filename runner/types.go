@@ -14,7 +14,7 @@
 
 package runner
 
-import "github.com/cloudbase/garm-provider-common/params"
+import params "github.com/cloudbase/garm-provider-common/params/v0.1.1"
 
 type HookTargetType string
 

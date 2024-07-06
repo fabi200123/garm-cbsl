@@ -1,4 +1,4 @@
-package external
+package external1
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 
 	garmErrors "github.com/cloudbase/garm-provider-common/errors"
-	"github.com/cloudbase/garm-provider-common/execution"
-	commonParams "github.com/cloudbase/garm-provider-common/params"
-	garmExec "github.com/cloudbase/garm-provider-common/util/exec"
+	execution "github.com/cloudbase/garm-provider-common/execution/v0.1.1"
+	commonParams "github.com/cloudbase/garm-provider-common/params/v0.1.1"
+	garmExec "github.com/cloudbase/garm-provider-common/util/v0.1.1/exec"
 	"github.com/cloudbase/garm/config"
 	"github.com/cloudbase/garm/metrics"
 	"github.com/cloudbase/garm/params"
@@ -314,6 +314,40 @@ func (e *external) Start(ctx context.Context, instance string) error {
 		return garmErrors.NewProviderError("provider binary %s returned error: %s", e.execPath, err)
 	}
 	return nil
+}
+
+func (e *external) GetVersionInfo(ctx context.Context) (commonParams.VersionInfo, error) {
+	asEnv := []string{
+		fmt.Sprintf("GARM_COMMAND=%s", execution.GetVersionInfoCommand),
+		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
+		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
+	}
+	asEnv = append(asEnv, e.environmentVariables...)
+
+	metrics.InstanceOperationCount.WithLabelValues(
+		"GetVersionInfo", // label: operation
+		e.cfg.Name,       // label: provider
+	).Inc()
+
+	out, err := garmExec.Exec(ctx, e.execPath, nil, asEnv)
+	if err != nil {
+		metrics.InstanceOperationFailedCount.WithLabelValues(
+			"GetVersionInfo", // label: operation
+			e.cfg.Name,       // label: provider
+		).Inc()
+		return commonParams.VersionInfo{}, garmErrors.NewProviderError("provider binary %s returned error: %s", e.execPath, err)
+	}
+
+	var param commonParams.VersionInfo
+	if err := json.Unmarshal(out, &param); err != nil {
+		metrics.InstanceOperationFailedCount.WithLabelValues(
+			"GetVersionInfo", // label: operation
+			e.cfg.Name,       // label: provider
+		).Inc()
+		return commonParams.VersionInfo{}, garmErrors.NewProviderError("failed to decode response from binary: %s", err)
+	}
+
+	return param, nil
 }
 
 func (e *external) AsParams() params.Provider {

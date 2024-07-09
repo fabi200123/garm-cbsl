@@ -588,7 +588,15 @@ func (r *basePoolManager) cleanupOrphanedGithubRunners(runners []*github.Runner)
 			slog.DebugContext(
 				r.ctx, "updating instances cache for pool",
 				"pool_id", pool.ID)
-			poolInstances, err = provider.ListInstances(r.ctx, pool.ID)
+			listInstancesParams := common.ListInstancesParams{
+				ListInstancesV011: common.ListInstancesV011Params{
+					ProviderBaseParams: common.ProviderBaseParams{
+						PoolInfo:       pool,
+						ControllerInfo: r.controllerInfo,
+					},
+				},
+			}
+			poolInstances, err = provider.ListInstances(r.ctx, pool.ID, listInstancesParams)
 			if err != nil {
 				return errors.Wrapf(err, "fetching instances for pool %s", pool.ID)
 			}
@@ -653,7 +661,15 @@ func (r *basePoolManager) cleanupOrphanedGithubRunners(runners []*github.Runner)
 				r.ctx, "instance was found in stopped state; starting",
 				"runner_name", dbInstance.Name)
 
-			if err := provider.Start(r.ctx, dbInstance.ProviderID); err != nil {
+			startParams := common.StartParams{
+				StartV011: common.StartV011Params{
+					ProviderBaseParams: common.ProviderBaseParams{
+						PoolInfo:       pool,
+						ControllerInfo: r.controllerInfo,
+					},
+				},
+			}
+			if err := provider.Start(r.ctx, dbInstance.ProviderID, startParams); err != nil {
 				return errors.Wrapf(err, "starting instance %s", dbInstance.ProviderID)
 			}
 			return nil
@@ -869,7 +885,15 @@ func (r *basePoolManager) addInstanceToProvider(instance params.Instance) error 
 
 	defer func() {
 		if instanceIDToDelete != "" {
-			if err := provider.DeleteInstance(r.ctx, instanceIDToDelete); err != nil {
+			deleteInstanceParams := common.DeleteInstanceParams{
+				DeleteInstanceV011: common.DeleteInstanceV011Params{
+					ProviderBaseParams: common.ProviderBaseParams{
+						PoolInfo:       pool,
+						ControllerInfo: r.controllerInfo,
+					},
+				},
+			}
+			if err := provider.DeleteInstance(r.ctx, instanceIDToDelete, deleteInstanceParams); err != nil {
 				if !errors.Is(err, runnerErrors.ErrNotFound) {
 					slog.With(slog.Any("error", err)).ErrorContext(
 						r.ctx, "failed to cleanup instance",
@@ -879,7 +903,15 @@ func (r *basePoolManager) addInstanceToProvider(instance params.Instance) error 
 		}
 	}()
 
-	providerInstance, err := provider.CreateInstance(r.ctx, bootstrapArgs)
+	createInstanceParams := common.CreateInstanceParams{
+		CreateInstanceV011: common.CreateInstanceV011Params{
+			ProviderBaseParams: common.ProviderBaseParams{
+				PoolInfo:       pool,
+				ControllerInfo: r.controllerInfo,
+			},
+		},
+	}
+	providerInstance, err := provider.CreateInstance(r.ctx, bootstrapArgs, createInstanceParams)
 	if err != nil {
 		instanceIDToDelete = instance.Name
 		return errors.Wrap(err, "creating instance")
@@ -1315,7 +1347,15 @@ func (r *basePoolManager) deleteInstanceFromProvider(ctx context.Context, instan
 		"runner_name", instance.Name,
 		"provider_id", identifier)
 
-	if err := provider.DeleteInstance(ctx, identifier); err != nil {
+	deleteInstanceParams := common.DeleteInstanceParams{
+		DeleteInstanceV011: common.DeleteInstanceV011Params{
+			ProviderBaseParams: common.ProviderBaseParams{
+				PoolInfo:       pool,
+				ControllerInfo: r.controllerInfo,
+			},
+		},
+	}
+	if err := provider.DeleteInstance(ctx, identifier, deleteInstanceParams); err != nil {
 		return errors.Wrap(err, "removing instance")
 	}
 

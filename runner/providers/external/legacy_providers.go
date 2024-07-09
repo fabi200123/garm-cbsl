@@ -19,22 +19,10 @@ import (
 	"github.com/cloudbase/garm/runner/common"
 )
 
-var _ common.Provider = (*external)(nil)
+var _ common.Provider = (*externalLegacy)(nil)
 
-// NewProvider selects based on the version, which provider to create.
-func NewProvider(ctx context.Context, cfg *config.Provider, controlerInfo params.ControllerInfo) (common.Provider, error) {
-	switch cfg.External.InterfaceVersion {
-	case "v0.1.0":
-		return NewLegacyProvider(ctx, cfg, controlerInfo.ControllerID.String())
-	case "v0.1.1":
-		return NewUpdatedProvider(ctx, cfg, controlerInfo)
-	default:
-		// No version declared, assume legacy
-		return NewLegacyProvider(ctx, cfg, controlerInfo.ControllerID.String())
-	}
-}
-
-func NewUpdatedProvider(ctx context.Context, cfg *config.Provider, controllerInfo params.ControllerInfo) (common.Provider, error) {
+// NewLegacyProvider creates a legacy external provider.
+func NewLegacyProvider(ctx context.Context, cfg *config.Provider, controllerID string) (common.Provider, error) {
 	if cfg.ProviderType != params.ExternalProvider {
 		return nil, garmErrors.NewBadRequestError("invalid provider config")
 	}
@@ -47,27 +35,28 @@ func NewUpdatedProvider(ctx context.Context, cfg *config.Provider, controllerInf
 	// Set GARM_INTERFACE_VERSION to the version of the interface that the external
 	// provider implements. This is used to ensure compatibility between the external
 	// provider and garm
-	envVars := cfg.External.GetEnvironmentVariables()
-	envVars = append(envVars, fmt.Sprintf("GARM_INTERFACE_VERSION=%s", cfg.External.InterfaceVersion))
 
-	return &external{
+	envVars := cfg.External.GetEnvironmentVariables()
+	envVars = append(envVars, fmt.Sprintf("GARM_INTERFACE_VERSION=%s", "v0.1.0"))
+
+	return &externalLegacy{
 		ctx:                  ctx,
-		controllerInfo:       controllerInfo,
+		controllerID:         controllerID,
 		cfg:                  cfg,
 		execPath:             execPath,
 		environmentVariables: envVars,
 	}, nil
 }
 
-type external struct {
+type externalLegacy struct {
 	ctx                  context.Context
-	controllerInfo       params.ControllerInfo
+	controllerID         string
 	cfg                  *config.Provider
 	execPath             string
 	environmentVariables []string
 }
 
-func (e *external) validateResult(inst commonParams.ProviderInstance) error {
+func (e *externalLegacy) validateResult(inst commonParams.ProviderInstance) error {
 	if inst.ProviderID == "" {
 		return garmErrors.NewProviderError("missing provider ID")
 	}
@@ -84,10 +73,10 @@ func (e *external) validateResult(inst commonParams.ProviderInstance) error {
 }
 
 // CreateInstance creates a new compute instance in the provider.
-func (e *external) CreateInstance(ctx context.Context, bootstrapParams commonParams.BootstrapInstance) (commonParams.ProviderInstance, error) {
+func (e *externalLegacy) CreateInstance(ctx context.Context, bootstrapParams commonParams.BootstrapInstance) (commonParams.ProviderInstance, error) {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.CreateInstanceCommand),
-		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
+		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_POOL_ID=%s", bootstrapParams.PoolID),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 	}
@@ -137,10 +126,10 @@ func (e *external) CreateInstance(ctx context.Context, bootstrapParams commonPar
 }
 
 // Delete instance will delete the instance in a provider.
-func (e *external) DeleteInstance(ctx context.Context, instance string) error {
+func (e *externalLegacy) DeleteInstance(ctx context.Context, instance string) error {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.DeleteInstanceCommand),
-		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
+		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 	}
@@ -165,10 +154,10 @@ func (e *external) DeleteInstance(ctx context.Context, instance string) error {
 }
 
 // GetInstance will return details about one instance.
-func (e *external) GetInstance(ctx context.Context, instance string) (commonParams.ProviderInstance, error) {
+func (e *externalLegacy) GetInstance(ctx context.Context, instance string) (commonParams.ProviderInstance, error) {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.GetInstanceCommand),
-		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
+		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 	}
@@ -211,10 +200,10 @@ func (e *external) GetInstance(ctx context.Context, instance string) (commonPara
 }
 
 // ListInstances will list all instances for a provider.
-func (e *external) ListInstances(ctx context.Context, poolID string) ([]commonParams.ProviderInstance, error) {
+func (e *externalLegacy) ListInstances(ctx context.Context, poolID string) ([]commonParams.ProviderInstance, error) {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.ListInstancesCommand),
-		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
+		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_POOL_ID=%s", poolID),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 	}
@@ -258,10 +247,10 @@ func (e *external) ListInstances(ctx context.Context, poolID string) ([]commonPa
 }
 
 // RemoveAllInstances will remove all instances created by this provider.
-func (e *external) RemoveAllInstances(ctx context.Context) error {
+func (e *externalLegacy) RemoveAllInstances(ctx context.Context) error {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.RemoveAllInstancesCommand),
-		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
+		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
@@ -283,10 +272,10 @@ func (e *external) RemoveAllInstances(ctx context.Context) error {
 }
 
 // Stop shuts down the instance.
-func (e *external) Stop(ctx context.Context, instance string) error {
+func (e *externalLegacy) Stop(ctx context.Context, instance string) error {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.StopInstanceCommand),
-		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
+		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 	}
@@ -308,10 +297,10 @@ func (e *external) Stop(ctx context.Context, instance string) error {
 }
 
 // Start boots up an instance.
-func (e *external) Start(ctx context.Context, instance string) error {
+func (e *externalLegacy) Start(ctx context.Context, instance string) error {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.StartInstanceCommand),
-		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
+		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 	}
@@ -333,7 +322,7 @@ func (e *external) Start(ctx context.Context, instance string) error {
 	return nil
 }
 
-func (e *external) AsParams() params.Provider {
+func (e *externalLegacy) AsParams() params.Provider {
 	return params.Provider{
 		Name:         e.cfg.Name,
 		Description:  e.cfg.Description,
@@ -344,7 +333,7 @@ func (e *external) AsParams() params.Provider {
 // DisableJITConfig tells us if the provider explicitly disables JIT configuration and
 // forces runner registration tokens to be used. This may happen if a provider has not yet
 // been updated to support JIT configuration.
-func (e *external) DisableJITConfig() bool {
+func (e *externalLegacy) DisableJITConfig() bool {
 	if e.cfg == nil {
 		return false
 	}

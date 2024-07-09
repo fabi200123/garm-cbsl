@@ -28,7 +28,7 @@ import (
 
 // LoadProvidersFromConfig loads all providers from the config and populates
 // a map with them.
-func LoadProvidersFromConfig(ctx context.Context, cfg config.Config, controllerID string) (map[string]common.Provider, error) {
+func LoadProvidersFromConfig(ctx context.Context, cfg config.Config, controllerInfo params.ControllerInfo) (map[string]common.Provider, error) {
 	providers := make(map[string]common.Provider, len(cfg.Providers))
 	for _, providerCfg := range cfg.Providers {
 		slog.InfoContext(
@@ -37,7 +37,7 @@ func LoadProvidersFromConfig(ctx context.Context, cfg config.Config, controllerI
 		switch providerCfg.ProviderType {
 		case params.ExternalProvider:
 			conf := providerCfg
-			provider, err := external.NewProvider(ctx, &conf, controllerID)
+			provider, err := external.NewProvider(ctx, &conf, controllerInfo)
 			if err != nil {
 				return nil, errors.Wrap(err, "creating provider")
 			}

@@ -52,7 +52,7 @@ func NewRunner(ctx context.Context, cfg config.Config, db dbCommon.Store) (*Runn
 		return nil, errors.Wrap(err, "fetching controller info")
 	}
 
-	providers, err := providers.LoadProvidersFromConfig(ctx, cfg, ctrlID.ControllerID.String())
+	providers, err := providers.LoadProvidersFromConfig(ctx, cfg, ctrlID)
 	if err != nil {
 		return nil, errors.Wrap(err, "loading providers")
 	}

@@ -21,7 +21,19 @@ import (
 
 var _ common.Provider = (*external)(nil)
 
+// NewProvider selects based on the version, which provider to create.
 func NewProvider(ctx context.Context, cfg *config.Provider, controllerID string) (common.Provider, error) {
+	switch cfg.External.InterfaceVersion {
+	case "v0.1.0":
+		return NewLegacyProvider(ctx, cfg, controllerID)
+	default:
+		// No version declared, assume legacy
+		return NewLegacyProvider(ctx, cfg, controllerID)
+	}
+}
+
+// NewLegacyProvider creates a legacy external provider.
+func NewLegacyProvider(ctx context.Context, cfg *config.Provider, controllerID string) (common.Provider, error) {
 	if cfg.ProviderType != params.ExternalProvider {
 		return nil, garmErrors.NewBadRequestError("invalid provider config")
 	}

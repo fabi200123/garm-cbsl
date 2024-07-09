@@ -24,7 +24,7 @@ import (
 	"os"
 
 	gErrors "github.com/cloudbase/garm-provider-common/errors"
-	"github.com/cloudbase/garm-provider-common/params"
+	params "github.com/cloudbase/garm-provider-common/params"
 
 	"github.com/mattn/go-isatty"
 )
@@ -76,6 +76,10 @@ func GetEnvironment() (Environment, error) {
 		var bootstrapParams params.BootstrapInstance
 		if err := json.Unmarshal(data.Bytes(), &bootstrapParams); err != nil {
 			return Environment{}, fmt.Errorf("failed to decode instance params: %w", err)
+		}
+		if bootstrapParams.ExtraSpecs == nil {
+			// Initialize ExtraSpecs as an empty JSON object
+			bootstrapParams.ExtraSpecs = json.RawMessage([]byte("{}"))
 		}
 		env.BootstrapParams = bootstrapParams
 	}

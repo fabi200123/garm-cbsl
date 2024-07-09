@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	garmErrors "github.com/cloudbase/garm-provider-common/errors"
-	"github.com/cloudbase/garm-provider-common/execution"
+	execution "github.com/cloudbase/garm-provider-common/execution/v0.1.1"
 	commonParams "github.com/cloudbase/garm-provider-common/params"
 	garmExec "github.com/cloudbase/garm-provider-common/util/exec"
 	"github.com/cloudbase/garm/config"

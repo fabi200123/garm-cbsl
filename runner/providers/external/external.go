@@ -26,6 +26,8 @@ func NewProvider(ctx context.Context, cfg *config.Provider, controllerID string)
 	switch cfg.External.InterfaceVersion {
 	case "v0.1.0":
 		return NewLegacyProvider(ctx, cfg, controllerID)
+	case "v0.1.1":
+		return NewUpdatedProvider(ctx, cfg, controllerID)
 	default:
 		// No version declared, assume legacy
 		return NewLegacyProvider(ctx, cfg, controllerID)
@@ -43,7 +45,37 @@ func NewLegacyProvider(ctx context.Context, cfg *config.Provider, controllerID s
 		return nil, errors.Wrap(err, "fetching executable path")
 	}
 
+	// Set GARM_INTERFACE_VERSION to the version of the interface that the external
+	// provider implements. This is used to ensure compatibility between the external
+	// provider and garm
+
 	envVars := cfg.External.GetEnvironmentVariables()
+	envVars = append(envVars, fmt.Sprintf("GARM_INTERFACE_VERSION=%s", "v0.1.0"))
+
+	return &external{
+		ctx:                  ctx,
+		controllerID:         controllerID,
+		cfg:                  cfg,
+		execPath:             execPath,
+		environmentVariables: envVars,
+	}, nil
+}
+
+func NewUpdatedProvider(ctx context.Context, cfg *config.Provider, controllerID string) (common.Provider, error) {
+	if cfg.ProviderType != params.ExternalProvider {
+		return nil, garmErrors.NewBadRequestError("invalid provider config")
+	}
+
+	execPath, err := cfg.External.ExecutablePath()
+	if err != nil {
+		return nil, errors.Wrap(err, "fetching executable path")
+	}
+
+	// Set GARM_INTERFACE_VERSION to the version of the interface that the external
+	// provider implements. This is used to ensure compatibility between the external
+	// provider and garm
+	envVars := cfg.External.GetEnvironmentVariables()
+	envVars = append(envVars, fmt.Sprintf("GARM_INTERFACE_VERSION=%s", cfg.External.InterfaceVersion))
 
 	return &external{
 		ctx:                  ctx,

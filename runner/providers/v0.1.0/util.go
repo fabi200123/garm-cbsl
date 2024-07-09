@@ -1,4 +1,4 @@
-package external
+package v010
 
 import (
 	commonParams "github.com/cloudbase/garm-provider-common/params"

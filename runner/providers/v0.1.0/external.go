@@ -1,4 +1,4 @@
-package external
+package v010
 
 import (
 	"context"
@@ -19,10 +19,10 @@ import (
 	"github.com/cloudbase/garm/runner/common"
 )
 
-var _ common.Provider = (*externalLegacy)(nil)
+var _ common.Provider = (*external)(nil)
 
-// NewLegacyProvider creates a legacy external provider.
-func NewLegacyProvider(ctx context.Context, cfg *config.Provider, controllerID string) (common.Provider, error) {
+// NewProvider creates a legacy external provider.
+func NewProvider(ctx context.Context, cfg *config.Provider, controllerID string) (common.Provider, error) {
 	if cfg.ProviderType != params.ExternalProvider {
 		return nil, garmErrors.NewBadRequestError("invalid provider config")
 	}
@@ -39,7 +39,7 @@ func NewLegacyProvider(ctx context.Context, cfg *config.Provider, controllerID s
 	envVars := cfg.External.GetEnvironmentVariables()
 	envVars = append(envVars, fmt.Sprintf("GARM_INTERFACE_VERSION=%s", "v0.1.0"))
 
-	return &externalLegacy{
+	return &external{
 		ctx:                  ctx,
 		controllerID:         controllerID,
 		cfg:                  cfg,
@@ -48,7 +48,7 @@ func NewLegacyProvider(ctx context.Context, cfg *config.Provider, controllerID s
 	}, nil
 }
 
-type externalLegacy struct {
+type external struct {
 	ctx                  context.Context
 	controllerID         string
 	cfg                  *config.Provider
@@ -56,7 +56,7 @@ type externalLegacy struct {
 	environmentVariables []string
 }
 
-func (e *externalLegacy) validateResult(inst commonParams.ProviderInstance) error {
+func (e *external) validateResult(inst commonParams.ProviderInstance) error {
 	if inst.ProviderID == "" {
 		return garmErrors.NewProviderError("missing provider ID")
 	}
@@ -73,7 +73,7 @@ func (e *externalLegacy) validateResult(inst commonParams.ProviderInstance) erro
 }
 
 // CreateInstance creates a new compute instance in the provider.
-func (e *externalLegacy) CreateInstance(ctx context.Context, bootstrapParams commonParams.BootstrapInstance) (commonParams.ProviderInstance, error) {
+func (e *external) CreateInstance(ctx context.Context, bootstrapParams commonParams.BootstrapInstance) (commonParams.ProviderInstance, error) {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.CreateInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
@@ -126,7 +126,7 @@ func (e *externalLegacy) CreateInstance(ctx context.Context, bootstrapParams com
 }
 
 // Delete instance will delete the instance in a provider.
-func (e *externalLegacy) DeleteInstance(ctx context.Context, instance string) error {
+func (e *external) DeleteInstance(ctx context.Context, instance string) error {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.DeleteInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
@@ -154,7 +154,7 @@ func (e *externalLegacy) DeleteInstance(ctx context.Context, instance string) er
 }
 
 // GetInstance will return details about one instance.
-func (e *externalLegacy) GetInstance(ctx context.Context, instance string) (commonParams.ProviderInstance, error) {
+func (e *external) GetInstance(ctx context.Context, instance string) (commonParams.ProviderInstance, error) {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.GetInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
@@ -200,7 +200,7 @@ func (e *externalLegacy) GetInstance(ctx context.Context, instance string) (comm
 }
 
 // ListInstances will list all instances for a provider.
-func (e *externalLegacy) ListInstances(ctx context.Context, poolID string) ([]commonParams.ProviderInstance, error) {
+func (e *external) ListInstances(ctx context.Context, poolID string) ([]commonParams.ProviderInstance, error) {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.ListInstancesCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
@@ -247,7 +247,7 @@ func (e *externalLegacy) ListInstances(ctx context.Context, poolID string) ([]co
 }
 
 // RemoveAllInstances will remove all instances created by this provider.
-func (e *externalLegacy) RemoveAllInstances(ctx context.Context) error {
+func (e *external) RemoveAllInstances(ctx context.Context) error {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.RemoveAllInstancesCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
@@ -272,7 +272,7 @@ func (e *externalLegacy) RemoveAllInstances(ctx context.Context) error {
 }
 
 // Stop shuts down the instance.
-func (e *externalLegacy) Stop(ctx context.Context, instance string) error {
+func (e *external) Stop(ctx context.Context, instance string) error {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.StopInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
@@ -297,7 +297,7 @@ func (e *externalLegacy) Stop(ctx context.Context, instance string) error {
 }
 
 // Start boots up an instance.
-func (e *externalLegacy) Start(ctx context.Context, instance string) error {
+func (e *external) Start(ctx context.Context, instance string) error {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.StartInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
@@ -322,7 +322,7 @@ func (e *externalLegacy) Start(ctx context.Context, instance string) error {
 	return nil
 }
 
-func (e *externalLegacy) AsParams() params.Provider {
+func (e *external) AsParams() params.Provider {
 	return params.Provider{
 		Name:         e.cfg.Name,
 		Description:  e.cfg.Description,
@@ -333,7 +333,7 @@ func (e *externalLegacy) AsParams() params.Provider {
 // DisableJITConfig tells us if the provider explicitly disables JIT configuration and
 // forces runner registration tokens to be used. This may happen if a provider has not yet
 // been updated to support JIT configuration.
-func (e *externalLegacy) DisableJITConfig() bool {
+func (e *external) DisableJITConfig() bool {
 	if e.cfg == nil {
 		return false
 	}

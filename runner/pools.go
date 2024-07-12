@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 
 	runnerErrors "github.com/cloudbase/garm-provider-common/errors"
+	"github.com/cloudbase/garm-provider-common/util"
 	"github.com/cloudbase/garm/auth"
 	"github.com/cloudbase/garm/params"
 )
@@ -108,6 +109,10 @@ func (r *Runner) UpdatePoolByID(ctx context.Context, poolID string, param params
 	if err != nil {
 		return params.Pool{}, errors.Wrap(err, "updating pool")
 	}
+
+	// Set in context the value of poolInfo
+	r.ctx = context.WithValue(r.ctx, util.PoolInfoKey, pool)
+
 	return newPool, nil
 }
 

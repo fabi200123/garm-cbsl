@@ -752,6 +752,9 @@ func (r *basePoolManager) AddRunner(ctx context.Context, poolID string, aditiona
 		createParams.AgentID = runner.GetID()
 	}
 
+	// Add to context the poolInfo for DeleteInstance
+	r.ctx = context.WithValue(r.ctx, util.PoolInfoKey, pool)
+
 	instance, err := r.store.CreateInstance(r.ctx, poolID, createParams)
 	if err != nil {
 		return errors.Wrap(err, "creating instance")
@@ -866,6 +869,9 @@ func (r *basePoolManager) addInstanceToProvider(instance params.Instance) error 
 	}
 
 	var instanceIDToDelete string
+
+	// Add to context the poolInfo for DeleteInstance
+	r.ctx = context.WithValue(r.ctx, util.PoolInfoKey, pool)
 
 	defer func() {
 		if instanceIDToDelete != "" {
@@ -1314,6 +1320,9 @@ func (r *basePoolManager) deleteInstanceFromProvider(ctx context.Context, instan
 		ctx, "calling delete instance on provider",
 		"runner_name", instance.Name,
 		"provider_id", identifier)
+
+	// Add to context the poolInfo for DeleteInstance
+	ctx = context.WithValue(ctx, util.PoolInfoKey, pool)
 
 	if err := provider.DeleteInstance(ctx, identifier); err != nil {
 		return errors.Wrap(err, "removing instance")

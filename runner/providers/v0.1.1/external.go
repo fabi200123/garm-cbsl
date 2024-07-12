@@ -12,6 +12,7 @@ import (
 	garmErrors "github.com/cloudbase/garm-provider-common/errors"
 	execution "github.com/cloudbase/garm-provider-common/execution/v0.1.1"
 	commonParams "github.com/cloudbase/garm-provider-common/params"
+	garmUtil "github.com/cloudbase/garm-provider-common/util"
 	garmExec "github.com/cloudbase/garm-provider-common/util/exec"
 	"github.com/cloudbase/garm/config"
 	"github.com/cloudbase/garm/metrics"
@@ -20,6 +21,8 @@ import (
 )
 
 var _ common.Provider = (*external)(nil)
+
+var poolInfo params.Pool
 
 func NewProvider(ctx context.Context, cfg *config.Provider, controllerInfo params.ControllerInfo) (common.Provider, error) {
 	if cfg.ProviderType != params.ExternalProvider {
@@ -72,13 +75,19 @@ func (e *external) validateResult(inst commonParams.ProviderInstance) error {
 
 // CreateInstance creates a new compute instance in the provider.
 func (e *external) CreateInstance(ctx context.Context, bootstrapParams commonParams.BootstrapInstance) (commonParams.ProviderInstance, error) {
+	// Adds Pool info from the context
+	poolInfo = ctx.Value(garmUtil.PoolInfoKey).(params.Pool)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.CreateInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
 		fmt.Sprintf("GARM_POOL_ID=%s", bootstrapParams.PoolID),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
+		fmt.Sprintf("GARM_POOL_IMAGE=%s", poolInfo.Image),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
+
+	// Adds Pool info from the context
+	poolInfo = ctx.Value(garmUtil.PoolInfoKey).(params.Pool)
 
 	asJs, err := json.Marshal(bootstrapParams)
 	if err != nil {
@@ -125,11 +134,14 @@ func (e *external) CreateInstance(ctx context.Context, bootstrapParams commonPar
 
 // Delete instance will delete the instance in a provider.
 func (e *external) DeleteInstance(ctx context.Context, instance string) error {
+	// Adds Pool info from the context
+	poolInfo = ctx.Value(garmUtil.PoolInfoKey).(params.Pool)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.DeleteInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
+		fmt.Sprintf("GARM_POOL_ID=%s", poolInfo.ID),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -158,6 +170,7 @@ func (e *external) GetInstance(ctx context.Context, instance string) (commonPara
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
+		fmt.Sprintf("GARM_POOL_ID=%s", poolInfo.ID),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -246,10 +259,13 @@ func (e *external) ListInstances(ctx context.Context, poolID string) ([]commonPa
 
 // RemoveAllInstances will remove all instances created by this provider.
 func (e *external) RemoveAllInstances(ctx context.Context) error {
+	// Adds Pool info from the context
+	poolInfo = ctx.Value(garmUtil.PoolInfoKey).(params.Pool)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.RemoveAllInstancesCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
+		fmt.Sprintf("GARM_POOL_ID=%s", poolInfo.ID),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -271,11 +287,14 @@ func (e *external) RemoveAllInstances(ctx context.Context) error {
 
 // Stop shuts down the instance.
 func (e *external) Stop(ctx context.Context, instance string) error {
+	// Adds Pool info from the context
+	poolInfo = ctx.Value(garmUtil.PoolInfoKey).(params.Pool)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.StopInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
+		fmt.Sprintf("GARM_POOL_ID=%s", poolInfo.ID),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -296,11 +315,14 @@ func (e *external) Stop(ctx context.Context, instance string) error {
 
 // Start boots up an instance.
 func (e *external) Start(ctx context.Context, instance string) error {
+	// Adds Pool info from the context
+	poolInfo = ctx.Value(garmUtil.PoolInfoKey).(params.Pool)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.StartInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerInfo.ControllerID.String()),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
+		fmt.Sprintf("GARM_POOL_ID=%s", poolInfo.ID),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 

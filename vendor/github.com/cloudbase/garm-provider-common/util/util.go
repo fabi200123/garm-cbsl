@@ -44,6 +44,12 @@ import (
 
 const alphanumeric = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
+type PoolInfoKeyType string
+
+const (
+	PoolInfoKey PoolInfoKeyType = "pool_id"
+)
+
 // From: https://www.alexedwards.net/blog/validation-snippets-for-go#email-validation
 var rxEmail = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 

@@ -53,6 +53,7 @@ func GetEnvironment() (Environment, error) {
 		Command:            ExecutionCommand(os.Getenv("GARM_COMMAND")),
 		ControllerID:       os.Getenv("GARM_CONTROLLER_ID"),
 		PoolID:             os.Getenv("GARM_POOL_ID"),
+		PoolImage:          os.Getenv("GARM_POOL_IMAGE"),
 		ProviderConfigFile: os.Getenv("GARM_PROVIDER_CONFIG_FILE"),
 		InstanceID:         os.Getenv("GARM_INSTANCE_ID"),
 		InterfaceVersion:   os.Getenv("GARM_INTERFACE_VERSION"),
@@ -96,6 +97,7 @@ type Environment struct {
 	Command            ExecutionCommand
 	ControllerID       string
 	PoolID             string
+	PoolImage          string
 	ProviderConfigFile string
 	InstanceID         string
 	InterfaceVersion   string
@@ -135,10 +137,14 @@ func (e Environment) Validate() error {
 		if e.InstanceID == "" {
 			return fmt.Errorf("missing instance ID")
 		}
+		if e.PoolID == "" {
+			return fmt.Errorf("missing pool ID")
+		}
 	case ListInstancesCommand:
 		if e.PoolID == "" {
 			return fmt.Errorf("missing pool ID")
 		}
+
 	case RemoveAllInstancesCommand:
 		if e.ControllerID == "" {
 			return fmt.Errorf("missing controller ID")

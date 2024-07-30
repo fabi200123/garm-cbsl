@@ -2,6 +2,7 @@ package v011
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -17,6 +18,7 @@ import (
 	"github.com/cloudbase/garm/metrics"
 	"github.com/cloudbase/garm/params"
 	"github.com/cloudbase/garm/runner/common"
+	"github.com/cloudbase/garm/runner/providers/util"
 )
 
 var _ common.Provider = (*external)(nil)
@@ -63,7 +65,7 @@ func (e *external) validateResult(inst commonParams.ProviderInstance) error {
 		return garmErrors.NewProviderError("missing instance name")
 	}
 
-	if !IsValidProviderStatus(inst.Status) {
+	if !util.IsValidProviderStatus(inst.Status) {
 		return garmErrors.NewProviderError("invalid status returned (%s)", inst.Status)
 	}
 
@@ -71,19 +73,12 @@ func (e *external) validateResult(inst commonParams.ProviderInstance) error {
 }
 
 // CreateInstance creates a new compute instance in the provider.
-func (e *external) CreateInstance(ctx context.Context, bootstrapParams commonParams.BootstrapInstance, createInstanceParams common.CreateInstanceParams) (commonParams.ProviderInstance, error) {
-	extraspecs := createInstanceParams.CreateInstanceV011.PoolInfo.ExtraSpecs
-	extraspecsValue, err := json.Marshal(extraspecs)
-	if err != nil {
-		return commonParams.ProviderInstance{}, errors.Wrap(err, "serializing extraspecs")
-	}
+func (e *external) CreateInstance(ctx context.Context, bootstrapParams commonParams.BootstrapInstance, _ common.CreateInstanceParams) (commonParams.ProviderInstance, error) {
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.CreateInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_POOL_ID=%s", bootstrapParams.PoolID),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
-		fmt.Sprintf("GARM_POOL_IMAGE=%s", createInstanceParams.CreateInstanceV011.PoolInfo.Image),
-		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", string(extraspecsValue)),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -137,13 +132,15 @@ func (e *external) DeleteInstance(ctx context.Context, instance string, deleteIn
 	if err != nil {
 		return errors.Wrap(err, "serializing extraspecs")
 	}
+	// Encode the extraspecs as base64 to avoid issues with special characters.
+	base64EncodedExtraSpecs := base64.StdEncoding.EncodeToString(extraspecsValue)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.DeleteInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 		fmt.Sprintf("GARM_POOL_ID=%s", deleteInstanceParams.DeleteInstanceV011.PoolInfo.ID),
-		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", string(extraspecsValue)),
+		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", base64EncodedExtraSpecs),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -172,13 +169,15 @@ func (e *external) GetInstance(ctx context.Context, instance string, getInstance
 	if err != nil {
 		return commonParams.ProviderInstance{}, errors.Wrap(err, "serializing extraspecs")
 	}
+	// Encode the extraspecs as base64 to avoid issues with special characters.
+	base64EncodedExtraSpecs := base64.StdEncoding.EncodeToString(extraspecsValue)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.GetInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 		fmt.Sprintf("GARM_POOL_ID=%s", getInstanceParams.GetInstanceV011.PoolInfo.ID),
-		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", string(extraspecsValue)),
+		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", base64EncodedExtraSpecs),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -225,12 +224,14 @@ func (e *external) ListInstances(ctx context.Context, poolID string, listInstanc
 	if err != nil {
 		return []commonParams.ProviderInstance{}, errors.Wrap(err, "serializing extraspecs")
 	}
+	// Encode the extraspecs as base64 to avoid issues with special characters.
+	base64EncodedExtraSpecs := base64.StdEncoding.EncodeToString(extraspecsValue)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.ListInstancesCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_POOL_ID=%s", poolID),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
-		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", string(extraspecsValue)),
+		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", base64EncodedExtraSpecs),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -278,12 +279,14 @@ func (e *external) RemoveAllInstances(ctx context.Context, removeAllInstances co
 	if err != nil {
 		return errors.Wrap(err, "serializing extraspecs")
 	}
+	// Encode the extraspecs as base64 to avoid issues with special characters.
+	base64EncodedExtraSpecs := base64.StdEncoding.EncodeToString(extraspecsValue)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.RemoveAllInstancesCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 		fmt.Sprintf("GARM_POOL_ID=%s", removeAllInstances.RemoveAllInstancesV011.PoolInfo.ID),
-		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", string(extraspecsValue)),
+		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", base64EncodedExtraSpecs),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -310,13 +313,15 @@ func (e *external) Stop(ctx context.Context, instance string, stopParams common.
 	if err != nil {
 		return errors.Wrap(err, "serializing extraspecs")
 	}
+	// Encode the extraspecs as base64 to avoid issues with special characters.
+	base64EncodedExtraSpecs := base64.StdEncoding.EncodeToString(extraspecsValue)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.StopInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 		fmt.Sprintf("GARM_POOL_ID=%s", stopParams.StopV011.PoolInfo.ID),
-		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", string(extraspecsValue)),
+		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", base64EncodedExtraSpecs),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 
@@ -342,13 +347,15 @@ func (e *external) Start(ctx context.Context, instance string, startParams commo
 	if err != nil {
 		return errors.Wrap(err, "serializing extraspecs")
 	}
+	// Encode the extraspecs as base64 to avoid issues with special characters.
+	base64EncodedExtraSpecs := base64.StdEncoding.EncodeToString(extraspecsValue)
 	asEnv := []string{
 		fmt.Sprintf("GARM_COMMAND=%s", execution.StartInstanceCommand),
 		fmt.Sprintf("GARM_CONTROLLER_ID=%s", e.controllerID),
 		fmt.Sprintf("GARM_INSTANCE_ID=%s", instance),
 		fmt.Sprintf("GARM_PROVIDER_CONFIG_FILE=%s", e.cfg.External.ConfigFile),
 		fmt.Sprintf("GARM_POOL_ID=%s", startParams.StartV011.PoolInfo.ID),
-		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", string(extraspecsValue)),
+		fmt.Sprintf("GARM_POOL_EXTRASPECS=%s", base64EncodedExtraSpecs),
 	}
 	asEnv = append(asEnv, e.environmentVariables...)
 

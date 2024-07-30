@@ -590,8 +590,10 @@ func (r *basePoolManager) cleanupOrphanedGithubRunners(runners []*github.Runner)
 				"pool_id", pool.ID)
 			listInstancesParams := common.ListInstancesParams{
 				ListInstancesV011: common.ListInstancesV011Params{
-					PoolInfo:       pool,
-					ControllerInfo: r.controllerInfo,
+					ProviderBaseParams: common.ProviderBaseParams{
+						PoolInfo:       pool,
+						ControllerInfo: r.controllerInfo,
+					},
 				},
 			}
 			poolInstances, err = provider.ListInstances(r.ctx, pool.ID, listInstancesParams)
@@ -661,8 +663,10 @@ func (r *basePoolManager) cleanupOrphanedGithubRunners(runners []*github.Runner)
 
 			startParams := common.StartParams{
 				StartV011: common.StartV011Params{
-					PoolInfo:       pool,
-					ControllerInfo: r.controllerInfo,
+					ProviderBaseParams: common.ProviderBaseParams{
+						PoolInfo:       pool,
+						ControllerInfo: r.controllerInfo,
+					},
 				},
 			}
 			if err := provider.Start(r.ctx, dbInstance.ProviderID, startParams); err != nil {
@@ -883,8 +887,10 @@ func (r *basePoolManager) addInstanceToProvider(instance params.Instance) error 
 		if instanceIDToDelete != "" {
 			deleteInstanceParams := common.DeleteInstanceParams{
 				DeleteInstanceV011: common.DeleteInstanceV011Params{
-					PoolInfo:       pool,
-					ControllerInfo: r.controllerInfo,
+					ProviderBaseParams: common.ProviderBaseParams{
+						PoolInfo:       pool,
+						ControllerInfo: r.controllerInfo,
+					},
 				},
 			}
 			if err := provider.DeleteInstance(r.ctx, instanceIDToDelete, deleteInstanceParams); err != nil {
@@ -899,8 +905,10 @@ func (r *basePoolManager) addInstanceToProvider(instance params.Instance) error 
 
 	createInstanceParams := common.CreateInstanceParams{
 		CreateInstanceV011: common.CreateInstanceV011Params{
-			PoolInfo:       pool,
-			ControllerInfo: r.controllerInfo,
+			ProviderBaseParams: common.ProviderBaseParams{
+				PoolInfo:       pool,
+				ControllerInfo: r.controllerInfo,
+			},
 		},
 	}
 	providerInstance, err := provider.CreateInstance(r.ctx, bootstrapArgs, createInstanceParams)
@@ -1341,8 +1349,10 @@ func (r *basePoolManager) deleteInstanceFromProvider(ctx context.Context, instan
 
 	deleteInstanceParams := common.DeleteInstanceParams{
 		DeleteInstanceV011: common.DeleteInstanceV011Params{
-			PoolInfo:       pool,
-			ControllerInfo: r.controllerInfo,
+			ProviderBaseParams: common.ProviderBaseParams{
+				PoolInfo:       pool,
+				ControllerInfo: r.controllerInfo,
+			},
 		},
 	}
 	if err := provider.DeleteInstance(ctx, identifier, deleteInstanceParams); err != nil {

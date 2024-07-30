@@ -17,6 +17,7 @@ import (
 	"github.com/cloudbase/garm/metrics"
 	"github.com/cloudbase/garm/params"
 	"github.com/cloudbase/garm/runner/common"
+	"github.com/cloudbase/garm/runner/providers/util"
 )
 
 var _ common.Provider = (*external)(nil)
@@ -37,7 +38,7 @@ func NewProvider(ctx context.Context, cfg *config.Provider, controllerID string)
 	// provider and garm
 
 	envVars := cfg.External.GetEnvironmentVariables()
-	envVars = append(envVars, fmt.Sprintf("GARM_INTERFACE_VERSION=%s", "v0.1.0"))
+	envVars = append(envVars, fmt.Sprintf("GARM_INTERFACE_VERSION=%s", common.Version010))
 
 	return &external{
 		ctx:                  ctx,
@@ -65,7 +66,7 @@ func (e *external) validateResult(inst commonParams.ProviderInstance) error {
 		return garmErrors.NewProviderError("missing instance name")
 	}
 
-	if !IsValidProviderStatus(inst.Status) {
+	if !util.IsValidProviderStatus(inst.Status) {
 		return garmErrors.NewProviderError("invalid status returned (%s)", inst.Status)
 	}
 

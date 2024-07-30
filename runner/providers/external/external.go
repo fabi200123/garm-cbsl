@@ -2,6 +2,7 @@ package external
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cloudbase/garm/config"
 	"github.com/cloudbase/garm/runner/common"
@@ -12,12 +13,11 @@ import (
 // NewProvider selects the provider based on the interface version
 func NewProvider(ctx context.Context, cfg *config.Provider, controllerID string) (common.Provider, error) {
 	switch cfg.External.InterfaceVersion {
-	case "v0.1.0":
+	case common.Version010, "":
 		return v010.NewProvider(ctx, cfg, controllerID)
-	case "v0.1.1":
+	case common.Version011:
 		return v011.NewProvider(ctx, cfg, controllerID)
 	default:
-		// No version declared, assume legacy
-		return v010.NewProvider(ctx, cfg, controllerID)
+		return nil, fmt.Errorf("unsupported interface version: %s", cfg.External.InterfaceVersion)
 	}
 }

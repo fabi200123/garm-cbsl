@@ -12,14 +12,11 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package executionv011
-
-import (
-	common "github.com/cloudbase/garm-provider-common/execution/common"
-)
+package common
 
 const (
-	ValidatePoolInfoCommand        common.ExecutionCommand = "ValidatePoolInfo"
-	GetConfigJSONSchemaCommand     common.ExecutionCommand = "GetConfigJSONSchema"
-	GetExtraSpecsJSONSchemaCommand common.ExecutionCommand = "GetExtraSpecsJSONSchema"
+	// Version v0.1.0
+	Version010 = "v0.1.0"
+	// Version v0.1.1
+	Version011 = "v0.1.1"
 )

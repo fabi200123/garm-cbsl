@@ -12,16 +12,31 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package execution
+package exec
 
-type ExecutionCommand string
+import (
+	"context"
+	"testing"
 
-const (
-	CreateInstanceCommand     ExecutionCommand = "CreateInstance"
-	DeleteInstanceCommand     ExecutionCommand = "DeleteInstance"
-	GetInstanceCommand        ExecutionCommand = "GetInstance"
-	ListInstancesCommand      ExecutionCommand = "ListInstances"
-	StartInstanceCommand      ExecutionCommand = "StartInstance"
-	StopInstanceCommand       ExecutionCommand = "StopInstance"
-	RemoveAllInstancesCommand ExecutionCommand = "RemoveAllInstances"
+	"github.com/stretchr/testify/require"
 )
+
+func TestExecSuccess(t *testing.T) {
+	ctx := context.Background()
+	providerBin := "gofmt"
+	stdinData := []byte("")
+	environ := []string{"TEST=1"}
+
+	_, err := Exec(ctx, providerBin, stdinData, environ)
+	require.NoError(t, err)
+}
+
+func TestExecFail(t *testing.T) {
+	ctx := context.Background()
+	providerBin := "garm-provider-test"
+	stdinData := []byte("test")
+	environ := []string{"TEST=1"}
+
+	_, err := Exec(ctx, providerBin, stdinData, environ)
+	require.ErrorContains(t, err, "provider binary failed with stdout")
+}

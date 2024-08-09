@@ -12,7 +12,7 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package execution
+package executionv010
 
 import (
 	"context"
@@ -38,4 +38,6 @@ type ExternalProvider interface {
 	Stop(ctx context.Context, instance string, force bool) error
 	// Start boots up an instance.
 	Start(ctx context.Context, instance string) error
+	// GetVersion returns the version of the provider.
+	GetVersion(ctx context.Context) string
 }

@@ -12,45 +12,23 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package execution
+package executionv010
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 
-	gErrors "github.com/cloudbase/garm-provider-common/errors"
+	"golang.org/x/mod/semver"
+
+	common "github.com/cloudbase/garm-provider-common/execution/common"
 	"github.com/cloudbase/garm-provider-common/params"
-
-	"github.com/mattn/go-isatty"
 )
 
-const (
-	// ExitCodeNotFound is an exit code that indicates a Not Found error
-	ExitCodeNotFound int = 30
-	// ExitCodeDuplicate is an exit code that indicates a duplicate error
-	ExitCodeDuplicate int = 31
-)
-
-func ResolveErrorToExitCode(err error) int {
-	if err != nil {
-		if errors.Is(err, gErrors.ErrNotFound) {
-			return ExitCodeNotFound
-		} else if errors.Is(err, gErrors.ErrDuplicateEntity) {
-			return ExitCodeDuplicate
-		}
-		return 1
-	}
-	return 0
-}
-
-func GetEnvironment() (Environment, error) {
-	env := Environment{
-		Command:            ExecutionCommand(os.Getenv("GARM_COMMAND")),
+func GetEnvironment() (EnvironmentV010, error) {
+	env := EnvironmentV010{
+		Command:            common.ExecutionCommand(os.Getenv("GARM_COMMAND")),
 		ControllerID:       os.Getenv("GARM_CONTROLLER_ID"),
 		PoolID:             os.Getenv("GARM_POOL_ID"),
 		ProviderConfigFile: os.Getenv("GARM_PROVIDER_CONFIG_FILE"),
@@ -59,48 +37,34 @@ func GetEnvironment() (Environment, error) {
 
 	// If this is a CreateInstance command, we need to get the bootstrap params
 	// from stdin
-	if env.Command == CreateInstanceCommand {
-		if isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd()) {
-			return Environment{}, fmt.Errorf("%s requires data passed into stdin", CreateInstanceCommand)
-		}
+	boostrapParams, err := common.GetBoostrapParamsFromStdin(env.Command)
+	if err != nil {
+		return EnvironmentV010{}, fmt.Errorf("failed to get bootstrap params: %w", err)
+	}
+	env.BootstrapParams = boostrapParams
 
-		var data bytes.Buffer
-		if _, err := io.Copy(&data, os.Stdin); err != nil {
-			return Environment{}, fmt.Errorf("failed to copy bootstrap params")
-		}
-
-		if data.Len() == 0 {
-			return Environment{}, fmt.Errorf("%s requires data passed into stdin", CreateInstanceCommand)
-		}
-
-		var bootstrapParams params.BootstrapInstance
-		if err := json.Unmarshal(data.Bytes(), &bootstrapParams); err != nil {
-			return Environment{}, fmt.Errorf("failed to decode instance params: %w", err)
-		}
-		if bootstrapParams.ExtraSpecs == nil {
-			// Initialize ExtraSpecs as an empty JSON object
-			bootstrapParams.ExtraSpecs = json.RawMessage([]byte("{}"))
-		}
-		env.BootstrapParams = bootstrapParams
+	if env.InterfaceVersion == "" {
+		env.InterfaceVersion = common.Version010
 	}
 
 	if err := env.Validate(); err != nil {
-		return Environment{}, fmt.Errorf("failed to validate execution environment: %w", err)
+		return EnvironmentV010{}, fmt.Errorf("failed to validate execution environment: %w", err)
 	}
 
 	return env, nil
 }
 
-type Environment struct {
-	Command            ExecutionCommand
+type EnvironmentV010 struct {
+	Command            common.ExecutionCommand
 	ControllerID       string
 	PoolID             string
 	ProviderConfigFile string
 	InstanceID         string
+	InterfaceVersion   string
 	BootstrapParams    params.BootstrapInstance
 }
 
-func (e Environment) Validate() error {
+func (e EnvironmentV010) Validate() error {
 	if e.Command == "" {
 		return fmt.Errorf("missing GARM_COMMAND")
 	}
@@ -118,7 +82,7 @@ func (e Environment) Validate() error {
 	}
 
 	switch e.Command {
-	case CreateInstanceCommand:
+	case common.CreateInstanceCommand:
 		if e.BootstrapParams.Name == "" {
 			return fmt.Errorf("missing bootstrap params")
 		}
@@ -128,18 +92,22 @@ func (e Environment) Validate() error {
 		if e.PoolID == "" {
 			return fmt.Errorf("missing pool ID")
 		}
-	case DeleteInstanceCommand, GetInstanceCommand,
-		StartInstanceCommand, StopInstanceCommand:
+	case common.DeleteInstanceCommand, common.GetInstanceCommand,
+		common.StartInstanceCommand, common.StopInstanceCommand:
 		if e.InstanceID == "" {
 			return fmt.Errorf("missing instance ID")
 		}
-	case ListInstancesCommand:
+	case common.ListInstancesCommand:
 		if e.PoolID == "" {
 			return fmt.Errorf("missing pool ID")
 		}
-	case RemoveAllInstancesCommand:
+	case common.RemoveAllInstancesCommand:
 		if e.ControllerID == "" {
 			return fmt.Errorf("missing controller ID")
+		}
+	case common.GetVersionCommand:
+		if semver.IsValid(e.InterfaceVersion) {
+			return fmt.Errorf("invalid interface version: %s", e.InterfaceVersion)
 		}
 	default:
 		return fmt.Errorf("unknown GARM_COMMAND: %s", e.Command)
@@ -147,10 +115,10 @@ func (e Environment) Validate() error {
 	return nil
 }
 
-func Run(ctx context.Context, provider ExternalProvider, env Environment) (string, error) {
+func Run(ctx context.Context, provider ExternalProvider, env EnvironmentV010) (string, error) {
 	var ret string
 	switch env.Command {
-	case CreateInstanceCommand:
+	case common.CreateInstanceCommand:
 		instance, err := provider.CreateInstance(ctx, env.BootstrapParams)
 		if err != nil {
 			return "", fmt.Errorf("failed to create instance in provider: %w", err)
@@ -161,7 +129,7 @@ func Run(ctx context.Context, provider ExternalProvider, env Environment) (strin
 			return "", fmt.Errorf("failed to marshal response: %w", err)
 		}
 		ret = string(asJs)
-	case GetInstanceCommand:
+	case common.GetInstanceCommand:
 		instance, err := provider.GetInstance(ctx, env.InstanceID)
 		if err != nil {
 			return "", fmt.Errorf("failed to get instance from provider: %w", err)
@@ -171,7 +139,7 @@ func Run(ctx context.Context, provider ExternalProvider, env Environment) (strin
 			return "", fmt.Errorf("failed to marshal response: %w", err)
 		}
 		ret = string(asJs)
-	case ListInstancesCommand:
+	case common.ListInstancesCommand:
 		instances, err := provider.ListInstances(ctx, env.PoolID)
 		if err != nil {
 			return "", fmt.Errorf("failed to list instances from provider: %w", err)
@@ -181,22 +149,25 @@ func Run(ctx context.Context, provider ExternalProvider, env Environment) (strin
 			return "", fmt.Errorf("failed to marshal response: %w", err)
 		}
 		ret = string(asJs)
-	case DeleteInstanceCommand:
+	case common.DeleteInstanceCommand:
 		if err := provider.DeleteInstance(ctx, env.InstanceID); err != nil {
 			return "", fmt.Errorf("failed to delete instance from provider: %w", err)
 		}
-	case RemoveAllInstancesCommand:
+	case common.RemoveAllInstancesCommand:
 		if err := provider.RemoveAllInstances(ctx); err != nil {
 			return "", fmt.Errorf("failed to destroy environment: %w", err)
 		}
-	case StartInstanceCommand:
+	case common.StartInstanceCommand:
 		if err := provider.Start(ctx, env.InstanceID); err != nil {
 			return "", fmt.Errorf("failed to start instance: %w", err)
 		}
-	case StopInstanceCommand:
+	case common.StopInstanceCommand:
 		if err := provider.Stop(ctx, env.InstanceID, true); err != nil {
 			return "", fmt.Errorf("failed to stop instance: %w", err)
 		}
+	case common.GetVersionCommand:
+		version := env.InterfaceVersion
+		ret = string(version)
 	default:
 		return "", fmt.Errorf("invalid command: %s", env.Command)
 	}

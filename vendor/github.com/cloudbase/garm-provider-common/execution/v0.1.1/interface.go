@@ -12,7 +12,7 @@
 //    License for the specific language governing permissions and limitations
 //    under the License.
 
-package execution
+package executionv011
 
 import (
 	"context"
@@ -38,4 +38,12 @@ type ExternalProvider interface {
 	Stop(ctx context.Context, instance string, force bool) error
 	// Start boots up an instance.
 	Start(ctx context.Context, instance string) error
+	// GetVersion returns the version of the provider.
+	GetVersion(ctx context.Context) string
+	// ValidatePoolInfo will validate the pool info and return an error if it's not valid.
+	ValidatePoolInfo(ctx context.Context, image string, flavor string, providerConfig string, extraspecs string) error
+	// GetConfigJSONSchema will return the JSON schema for the provider's configuration.
+	GetConfigJSONSchema(ctx context.Context) (string, error)
+	// GetExtraSpecsJSONSchema will return the JSON schema for the provider's extra specs.
+	GetExtraSpecsJSONSchema(ctx context.Context) (string, error)
 }

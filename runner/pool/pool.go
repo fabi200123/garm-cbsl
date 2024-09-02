@@ -130,6 +130,16 @@ type basePoolManager struct {
 	keyMux *keyMutex
 }
 
+func (r *basePoolManager) getProviderBaseParams(pool params.Pool) common.ProviderBaseParams {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	return common.ProviderBaseParams{
+		PoolInfo:       pool,
+		ControllerInfo: r.controllerInfo,
+	}
+}
+
 func (r *basePoolManager) HandleWorkflowJob(job params.WorkflowJob) error {
 	if err := r.ValidateOwner(job); err != nil {
 		return errors.Wrap(err, "validating owner")
@@ -591,10 +601,7 @@ func (r *basePoolManager) cleanupOrphanedGithubRunners(runners []*github.Runner)
 				"pool_id", pool.ID)
 			listInstancesParams := common.ListInstancesParams{
 				ListInstancesV011: common.ListInstancesV011Params{
-					ProviderBaseParams: common.ProviderBaseParams{
-						PoolInfo:       pool,
-						ControllerInfo: r.controllerInfo,
-					},
+					ProviderBaseParams: r.getProviderBaseParams(pool),
 				},
 			}
 			poolInstances, err = provider.ListInstances(r.ctx, pool.ID, listInstancesParams)
